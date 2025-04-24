@@ -13,7 +13,7 @@ class EvenementController
 
     public function ajouterEvenement($nom, $date, $lieu, $organisateur)
     {
-        // Ajouter un événement dans la base de données
+        
         $query = "INSERT INTO evenement (nom_event, date_event, lieu, organisateur) VALUES (?, ?, ?, ?)";
         $stmt = $this->db->prepare($query);
         return $stmt->execute([$nom, $date, $lieu, $organisateur]);
@@ -21,7 +21,7 @@ class EvenementController
 
     public function getEvenementById($id)
     {
-        // Récupérer un événement par son ID
+        
         $query = "SELECT * FROM evenement WHERE id_event = ?";
         $stmt = $this->db->prepare($query);
         $stmt->execute([$id]);
@@ -30,7 +30,7 @@ class EvenementController
 
     public function modifierEvenement($id, $nom, $date, $lieu, $organisateur)
     {
-        // Modifier un événement existant
+        
         $query = "UPDATE evenement SET nom_event = ?, date_event = ?, lieu = ?, organisateur = ? WHERE id_event = ?";
         $stmt = $this->db->prepare($query);
         return $stmt->execute([$nom, $date, $lieu, $organisateur, $id]);
@@ -38,16 +38,16 @@ class EvenementController
 
     public function supprimerEvenement($id)
     {
-        // Vérifier si l'événement existe
+        
         $evenement = $this->getEvenementById($id);
         if (!$evenement) {
             return false;
         }
 
-        // Supprimer les réservations associées à cet événement
+
         $this->supprimerReservationsParEvenement($id);
 
-        // Supprimer l'événement
+        
         $sql = "DELETE FROM evenement WHERE id_event = :id";
         try {
             $query = $this->db->prepare($sql);

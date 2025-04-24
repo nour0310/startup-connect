@@ -4,17 +4,17 @@ require_once '../../Controller/EvenementController.php';
 // Initialiser le contrôleur
 $evenementController = new EvenementController();
 
-// Récupérer tous les événements (sans filtrage par date)
+
 $evenements = $evenementController->afficherEvenements();
 
-// Gestion de la recherche
+
 $searchTerm = '';
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $searchTerm = $_GET['search'];
     $evenements = $evenementController->rechercherEvenements($searchTerm);
 }
 
-// Gestion du tri
+//  tri
 $critere = isset($_GET['critere']) ? $_GET['critere'] : 'date_event';
 $ordre = isset($_GET['ordre']) ? $_GET['ordre'] : 'ASC';
 

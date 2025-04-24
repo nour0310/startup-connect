@@ -5,7 +5,7 @@ include_once $_SERVER['DOCUMENT_ROOT'] . '/projet/Model/Evenement.php';
 
 class ReservationController
 {
-    // Ajouter une réservation
+   
     function ajouterReservation($reservation)
     {
         $sql = "INSERT INTO reservation (id_event, nom_client, email, date_reservation, nb_places) 
@@ -27,7 +27,7 @@ class ReservationController
         }
     }
 
-    // Ajouter une réservation à partir d'un tableau de données
+   
     function addReservation($reservationData)
     {
         $sql = "INSERT INTO reservation (id_event, nom_client, email, date_reservation, nb_places) 
@@ -49,7 +49,7 @@ class ReservationController
         }
     }
 
-    // Récupérer une réservation par son ID avec les détails de l'événement associé
+
     function getReservationById($id)
     {
         $sql = "SELECT r.*, e.nom_event, e.date_event, e.lieu, e.organisateur 
@@ -67,10 +67,10 @@ class ReservationController
         }
     }
 
-    // Supprimer une réservation
+    
     function supprimerReservation($id)
     {
-        // Vérifier si la réservation existe
+        
         $reservation = $this->getReservationById($id);
         if (!$reservation) {
             return false;
@@ -88,7 +88,7 @@ class ReservationController
         }
     }
 
-    // Récupérer toutes les réservations avec les détails des événements
+  
     function afficherReservations()
     {
         $sql = "SELECT r.*, e.nom_event, e.date_event, e.lieu, e.organisateur 
@@ -105,7 +105,7 @@ class ReservationController
         }
     }
 
-    // Mettre à jour une réservation
+   
     function modifierReservation($reservation)
     {
         $sql = "UPDATE reservation SET 
@@ -131,7 +131,7 @@ class ReservationController
         }
     }
 
-    // Récupérer les réservations par événement
+   
     function getReservationsParEvenement($eventId)
     {
         $sql = "SELECT r.*, e.nom_event, e.date_event 
@@ -150,7 +150,7 @@ class ReservationController
         }
     }
 
-    // Récupérer les réservations par email
+   
     function getReservationsParEmail($email)
     {
         $sql = "SELECT r.*, e.nom_event, e.date_event, e.lieu, e.organisateur 
@@ -169,7 +169,7 @@ class ReservationController
         }
     }
 
-    // Calculer le nombre total de places réservées pour un événement
+   
     function getTotalPlacesReservees($eventId)
     {
         $sql = "SELECT SUM(nb_places) as total FROM reservation 
@@ -186,7 +186,7 @@ class ReservationController
         }
     }
 
-    // Rechercher des réservations avec jointure sur événements
+    
     function rechercherReservations($keyword)
     {
         $sql = "SELECT r.*, e.nom_event, e.date_event 
@@ -207,7 +207,7 @@ class ReservationController
         }
     }
 
-    // Obtenir le nombre total de réservations
+    
     function getTotalReservations()
     {
         $sql = "SELECT COUNT(*) as total FROM reservation";
@@ -223,7 +223,7 @@ class ReservationController
         }
     }
 
-    // Pagination des réservations
+   
     function getReservationsParPage($depart, $reservationsParPage)
     {
         $sql = "SELECT r.*, e.nom_event, e.date_event 
@@ -244,7 +244,7 @@ class ReservationController
         }
     }
 
-    // Statistiques: Nombre de réservations par événement
+    
     function getStatistiquesReservationsParEvenement()
     {
         $sql = "SELECT e.id_event, e.nom_event, COUNT(r.id_reservation) as nb_reservations, 
@@ -264,7 +264,7 @@ class ReservationController
         }
     }
 
-    // Vérifier si une personne a déjà réservé pour un événement
+   
     function verifierReservationExistante($email, $eventId)
     {
         $sql = "SELECT COUNT(*) as nb FROM reservation 

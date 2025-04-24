@@ -1,7 +1,7 @@
 <?php
 require_once '../../Controller/EvenementController.php';
 
-// Initialiser le contrôleur
+
 $evenementController = new EvenementController();
 $message = '';
 $messageType = '';
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $messageType = $success ? "success" : "danger";
         
         if ($success) {
-            // Rediriger vers la liste des événements après un ajout réussi
+           
             header("Location: GestionEvenements.php?message=".urlencode($message)."&type={$messageType}");
             exit();
         }
@@ -243,14 +243,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- JavaScript pour la validation du formulaire -->
                 <script>
                 document.addEventListener('DOMContentLoaded', function() {
-                    // Référence au formulaire et aux champs
+                    
                     const form = document.getElementById('eventForm');
                     const nomInput = document.getElementById('nom');
                     const dateInput = document.getElementById('date');
                     const lieuSelect = document.getElementById('lieu');
                     const organisateurInput = document.getElementById('organisateur');
                     
-                    // Fonction pour afficher les erreurs
+                    
                     function showError(input, message) {
                         input.classList.add('is-invalid');
                         // Trouver le div de feedback correspondant
@@ -270,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     
-                    // Validation du nom d'événement (ne doit pas être vide)
+                    // (ne doit pas être vide)
                     function validateEventName(name) {
                         return name.trim() !== '';
                     }
@@ -284,24 +284,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         return selectedDate < today;
                     }
                     
-                    // Validation de la date (doit être renseignée et ne pas être dans le passé)
+                   
                     function validateDate(date) {
                         if (date === '') return false;
                         if (isDateInPast(date)) return false;
                         return true;
                     }
                     
-                    // Validation du lieu (doit être sélectionné)
+                 
                     function validateLocation(location) {
                         return location.trim() !== '';
                     }
                     
-                    // Validation de l'organisateur (ne doit pas être vide)
+                   
                     function validateOrganizer(organizer) {
                         return organizer.trim() !== '';
                     }
                     
-                    // Validation en temps réel
+                   
                     nomInput.addEventListener('input', function() {
                         if (!validateEventName(this.value)) {
                             showError(this, 'Veuillez entrer un nom d\'événement valide');
@@ -336,17 +336,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     });
                     
-                    // Validation complète du formulaire lors de la soumission
+                    // Validation lors de la soumission
                     form.addEventListener('submit', function(event) {
                         let isValid = true;
                         
-                        // Validation du nom
+                        
                         if (!validateEventName(nomInput.value)) {
                             showError(nomInput, 'Veuillez entrer un nom d\'événement valide');
                             isValid = false;
                         }
                         
-                        // Validation de la date
+                        
                         if (!validateDate(dateInput.value)) {
                             if (dateInput.value === '') {
                                 showError(dateInput, 'Veuillez sélectionner une date');
@@ -356,13 +356,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             isValid = false;
                         }
                         
-                        // Validation du lieu
+                        
                         if (!validateLocation(lieuSelect.value)) {
                             showError(lieuSelect, 'Veuillez sélectionner un lieu');
                             isValid = false;
                         }
                         
-                        // Validation de l'organisateur
+                        
                         if (!validateOrganizer(organisateurInput.value)) {
                             showError(organisateurInput, 'Veuillez spécifier un organisateur');
                             isValid = false;

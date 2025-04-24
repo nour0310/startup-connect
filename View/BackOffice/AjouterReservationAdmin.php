@@ -1,41 +1,54 @@
 <?php
+require_once '../../Controller/ReservationController.php';
 require_once '../../Controller/EvenementController.php';
 
-// Initialiser le contrôleur
-$evenementController = new EvenementController();
-$message = '';
-$messageType = '';
-
-if (!isset($_GET['id'])) {
+// Vérifier si l'ID de l'événement est fourni
+if (!isset($_GET['event_id']) || empty($_GET['event_id'])) {
     header('Location: GestionEvenements.php');
-    exit;
+    exit();
 }
 
-$id = (int)$_GET['id'];
-$evenement = $evenementController->getEvenementById($id);
+$event_id = (int)$_GET['event_id'];
+
+// Initialiser les contrôleurs
+$reservationController = new ReservationController();
+$evenementController = new EvenementController();
+
+// Récupérer les détails de l'événement
+$evenement = $evenementController->getEvenementById($event_id);
 
 if (!$evenement) {
     header('Location: GestionEvenements.php');
-    exit;
+    exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = trim($_POST['nom']);
-    $date = trim($_POST['date']);
-    $lieu = trim($_POST['lieu']);
-    $organisateur = trim($_POST['organisateur']);
+$message = '';
+$messageType = '';
 
-    if (!empty($nom) && !empty($date)) {
-        $success = $evenementController->modifierEvenement($id, $nom, $date, $lieu, $organisateur);
-        $message = $success ? "Événement modifié avec succès." : "Erreur lors de la modification de l'événement.";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nom_client = trim($_POST['nom_client']);
+    $email = trim($_POST['email']);
+    $nb_places = (int)$_POST['nb_places'];
+    $date_reservation = date('Y-m-d');
+
+    if (!empty($nom_client) && !empty($email) && $nb_places > 0) {
+        // Créer un tableau de données pour la réservation
+        $reservationData = [
+            'id_event' => $event_id,
+            'nom_client' => $nom_client,
+            'email' => $email,
+            'date_reservation' => $date_reservation,
+            'nb_places' => $nb_places
+        ];
+        
+        $success = $reservationController->addReservation($reservationData);
+        $message = $success ? "Réservation ajoutée avec succès." : "Erreur lors de l'ajout de la réservation.";
         $messageType = $success ? "success" : "danger";
         
         if ($success) {
-         
-            $evenement = $evenementController->getEvenementById($id);
-            
-          
-            header("refresh:2;url=GestionEvenements.php?message=".urlencode($message)."&type={$messageType}");
+            // Rediriger vers la liste des réservations après un ajout réussi
+            header("Location: VoirReservations.php?event_id={$event_id}&message=".urlencode($message)."&type={$messageType}");
+            exit();
         }
     } else {
         $message = "Veuillez remplir tous les champs obligatoires.";
@@ -48,10 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Modifier un Événement - Admin Dashboard</title>
+    <title>Ajouter une Réservation - Admin Dashboard</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="gestion événements, modification" name="keywords">
-    <meta content="Modifier un événement existant" name="description">
+    <meta content="gestion réservations, ajout" name="keywords">
+    <meta content="Ajouter une nouvelle réservation" name="description">
 
     <!-- Favicon -->
     <link href="../../img/favicon.ico" rel="icon">
@@ -146,8 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="dropdown-menu m-0">
                             <a href="GestionUtilisateurs.html" class="dropdown-item">Utilisateurs</a>
                             <a href="GestionStartups.html" class="dropdown-item">Startups</a>
-                            <a href="GestionEvenements.php" class="dropdown-item active">Événements</a>
-                            <a href="GestionReservations.php" class="dropdown-item">Réservations</a>
+                            <a href="GestionEvenements.php" class="dropdown-item">Événements</a>
+                            <a href="GestionReservations.php" class="dropdown-item active">Réservations</a>
                             <a href="GestionInvestissements.html" class="dropdown-item">Investissements</a>
                         </div>
                     </div>
@@ -162,10 +175,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container-fluid bg-primary py-5 bg-header" style="margin-bottom: 90px;">
         <div class="row py-5">
             <div class="col-12 pt-lg-5 mt-lg-5 text-center">
-                <h1 class="display-4 text-white animated zoomIn">Modifier un Événement</h1>
+                <h1 class="display-4 text-white animated zoomIn">Ajouter une Réservation</h1>
                 <a href="GestionEvenements.php" class="h5 text-white">Événements</a>
                 <i class="far fa-circle text-white px-2"></i>
-                <span class="h5 text-white">Modifier</span>
+                <a href="VoirReservations.php?event_id=<?= $event_id ?>" class="h5 text-white">Réservations</a>
+                <i class="far fa-circle text-white px-2"></i>
+                <span class="h5 text-white">Ajouter</span>
             </div>
         </div>
     </div>
@@ -176,15 +191,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="container py-5">
             <div class="row">
                 <div class="col-lg-12">
-                    <a href="GestionEvenements.php" class="btn-back">
+                    <a href="VoirReservations.php?event_id=<?= $event_id ?>" class="btn-back">
                         <i class="fas fa-arrow-left"></i>
-                        Retour à la liste des événements
+                        Retour à la liste des réservations
                     </a>
                 </div>
             </div>
             
             <div class="form-container">
-                <h2 class="mb-4"><i class="fas fa-edit me-2"></i>Modifier l'Événement</h2>
+                <h2 class="mb-4"><i class="fas fa-plus-circle me-2"></i>Ajouter une Réservation</h2>
+                <h5 class="text-primary mb-4">Événement : <?= htmlspecialchars($evenement['nom_event']) ?></h5>
                 
                 <?php if (!empty($message)): ?>
                     <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
@@ -194,204 +210,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
                 
-                <form method="POST" action="" class="mt-4" id="eventForm">
+                <form method="POST" action="" class="mt-4" id="reservationForm">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="nom" class="form-label fw-bold">Nom de l'Événement *</label>
-                            <input type="text" class="form-control" id="nom" name="nom" value="<?= htmlspecialchars($evenement['nom_event']) ?>">
-                            <div class="invalid-feedback">Veuillez entrer un nom d'événement valide.</div>
+                            <label for="nom_client" class="form-label fw-bold">Nom du Client *</label>
+                            <input type="text" class="form-control" id="nom_client" name="nom_client">
+                            <div class="invalid-feedback">Veuillez entrer le nom du client.</div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="date" class="form-label fw-bold">Date *</label>
-                            <input type="date" class="form-control" id="date" name="date" value="<?= htmlspecialchars($evenement['date_event']) ?>">
-                            <div class="invalid-feedback" id="dateError">La date ne peut pas être dans le passé.</div>
+                            <label for="email" class="form-label fw-bold">Email *</label>
+                            <input type="text" class="form-control" id="email" name="email">
+                            <div class="invalid-feedback">Veuillez entrer une adresse email valide.</div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="lieu" class="form-label fw-bold">Lieu *</label>
-                            <select class="form-select" id="lieu" name="lieu">
-                                <option value="">Sélectionner un lieu</option>
-                                <option value="Tunis" <?= $evenement['lieu'] == 'Tunis' ? 'selected' : '' ?>>Tunis</option>
-                                <option value="Sfax" <?= $evenement['lieu'] == 'Sfax' ? 'selected' : '' ?>>Sfax</option>
-                                <option value="Sousse" <?= $evenement['lieu'] == 'Sousse' ? 'selected' : '' ?>>Sousse</option>
-                                <option value="Kairouan" <?= $evenement['lieu'] == 'Kairouan' ? 'selected' : '' ?>>Kairouan</option>
-                                <option value="Bizerte" <?= $evenement['lieu'] == 'Bizerte' ? 'selected' : '' ?>>Bizerte</option>
-                                <option value="Gabès" <?= $evenement['lieu'] == 'Gabès' ? 'selected' : '' ?>>Gabès</option>
-                                <option value="Ariana" <?= $evenement['lieu'] == 'Ariana' ? 'selected' : '' ?>>Ariana</option>
-                                <option value="Gafsa" <?= $evenement['lieu'] == 'Gafsa' ? 'selected' : '' ?>>Gafsa</option>
-                                <option value="Monastir" <?= $evenement['lieu'] == 'Monastir' ? 'selected' : '' ?>>Monastir</option>
-                                <option value="Ben Arous" <?= $evenement['lieu'] == 'Ben Arous' ? 'selected' : '' ?>>Ben Arous</option>
-                                <option value="Kasserine" <?= $evenement['lieu'] == 'Kasserine' ? 'selected' : '' ?>>Kasserine</option>
-                                <option value="Médenine" <?= $evenement['lieu'] == 'Médenine' ? 'selected' : '' ?>>Médenine</option>
-                                <option value="Nabeul" <?= $evenement['lieu'] == 'Nabeul' ? 'selected' : '' ?>>Nabeul</option>
-                                <option value="Tataouine" <?= $evenement['lieu'] == 'Tataouine' ? 'selected' : '' ?>>Tataouine</option>
-                                <option value="Béja" <?= $evenement['lieu'] == 'Béja' ? 'selected' : '' ?>>Béja</option>
-                                <option value="Kef" <?= $evenement['lieu'] == 'Kef' ? 'selected' : '' ?>>Kef</option>
-                                <option value="Mahdia" <?= $evenement['lieu'] == 'Mahdia' ? 'selected' : '' ?>>Mahdia</option>
-                                <option value="Sidi Bouzid" <?= $evenement['lieu'] == 'Sidi Bouzid' ? 'selected' : '' ?>>Sidi Bouzid</option>
-                                <option value="Jendouba" <?= $evenement['lieu'] == 'Jendouba' ? 'selected' : '' ?>>Jendouba</option>
-                                <option value="Tozeur" <?= $evenement['lieu'] == 'Tozeur' ? 'selected' : '' ?>>Tozeur</option>
-                                <option value="Siliana" <?= $evenement['lieu'] == 'Siliana' ? 'selected' : '' ?>>Siliana</option>
-                                <option value="Zaghouan" <?= $evenement['lieu'] == 'Zaghouan' ? 'selected' : '' ?>>Zaghouan</option>
-                                <option value="Kébili" <?= $evenement['lieu'] == 'Kébili' ? 'selected' : '' ?>>Kébili</option>
-                                <option value="Manouba" <?= $evenement['lieu'] == 'Manouba' ? 'selected' : '' ?>>Manouba</option>
-                            </select>
-                            <div class="invalid-feedback">Veuillez sélectionner un lieu.</div>
+                            <label for="date_reservation" class="form-label fw-bold">Date de Réservation</label>
+                            <input type="text" class="form-control" id="date_reservation" value="<?= date('d/m/Y') ?>" disabled>
+                            <small class="text-muted">La date actuelle sera utilisée.</small>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="organisateur" class="form-label fw-bold">Organisateur *</label>
-                            <input type="text" class="form-control" id="organisateur" name="organisateur" value="<?= htmlspecialchars($evenement['organisateur']) ?>">
-                            <div class="invalid-feedback">Veuillez spécifier un organisateur.</div>
+                            <label for="nb_places" class="form-label fw-bold">Nombre de Places *</label>
+                            <input type="number" class="form-control" id="nb_places" name="nb_places">
+                            <div class="invalid-feedback">Veuillez entrer un nombre de places entre 1 et 8.</div>
                         </div>
                     </div>
                     <div class="mt-4">
-                        <button type="submit" class="btn btn-primary px-4 py-2">
-                            <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                        <button type="submit" class="btn btn-primary px-4 py-2" id="btnSubmit">
+                            <i class="fas fa-plus-circle me-2"></i>Ajouter la réservation
                         </button>
-                        <a href="GestionEvenements.php" class="btn btn-secondary px-4 py-2 ms-2">
+                        <a href="VoirReservations.php?event_id=<?= $event_id ?>" class="btn btn-secondary px-4 py-2 ms-2">
                             <i class="fas fa-times me-2"></i>Annuler
                         </a>
                     </div>
                 </form>
                 
-                <!-- JavaScript pour la validation du formulaire -->
+                <!-- JavaScript pour validation -->
                 <script>
                 document.addEventListener('DOMContentLoaded', function() {
-                   
-                    const form = document.getElementById('eventForm');
-                    const nomInput = document.getElementById('nom');
-                    const dateInput = document.getElementById('date');
-                    const lieuSelect = document.getElementById('lieu');
-                    const organisateurInput = document.getElementById('organisateur');
+                    // Référence au formulaire et aux champs
+                    const form = document.getElementById('reservationForm');
+                    const nomInput = document.getElementById('nom_client');
+                    const emailInput = document.getElementById('email');
+                    const nbPlacesInput = document.getElementById('nb_places');
                     
-                    // pour déterminer si modifiée
-                    const originalDate = "<?= htmlspecialchars($evenement['date_event']) ?>";
-                    
-                    
+                    // Fonction pour afficher les erreurs
                     function showError(input, message) {
                         input.classList.add('is-invalid');
-                        // Trouver le div de feedback correspondant
                         const errorDiv = input.nextElementSibling;
                         if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
                             errorDiv.textContent = message;
-                            errorDiv.style.display = 'block';
                         }
                     }
                     
-                    
+                    // Fonction pour cacher les erreurs
                     function hideError(input) {
                         input.classList.remove('is-invalid');
-                        const errorDiv = input.nextElementSibling;
-                        if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
-                            errorDiv.style.display = 'none';
-                        }
                     }
                     
-                    
-                    function validateEventName(name) {
-                        return name.trim() !== '';
+                    // Validation du nom (lettres, espaces, tirets et apostrophes seulement)
+                    function validateName(name) {
+                        const nameRegex = /^[a-zA-ZÀ-ÖØ-öø-ÿ\s\-']+$/;
+                        return nameRegex.test(name);
                     }
                     
-                 
-                    function isDateInPast(dateString) {
-                        const selectedDate = new Date(dateString);
-                        selectedDate.setHours(0, 0, 0, 0);
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        return selectedDate < today;
+                    // Validation de l'email avec regex amélioré
+                    function validateEmail(email) {
+                        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                        return emailRegex.test(email);
                     }
                     
-                    
-                    function validateDate(dateStr, isNew = false) {
-                        if (dateStr === '') return false;
-                        // Si différente de l'originale
-                        if (isNew && isDateInPast(dateStr)) return false;
-                        return true;
+                    // Validation du nombre de places
+                    function validateNbPlaces(nbPlaces) {
+                        const nb = parseInt(nbPlaces);
+                        return !isNaN(nb) && nb >= 1 && nb <= 8;
                     }
                     
-                    
-                    function validateLocation(location) {
-                        return location.trim() !== '';
-                    }
-                    
-                   
-                    function validateOrganizer(organizer) {
-                        return organizer.trim() !== '';
-                    }
-                    
-                    
+                    // Événements de validation temps réel
                     nomInput.addEventListener('input', function() {
-                        if (!validateEventName(this.value)) {
-                            showError(this, 'Veuillez entrer un nom d\'événement');
+                        if (this.value.trim() === '') {
+                            showError(this, 'Le nom est obligatoire');
+                        } else if (!validateName(this.value.trim())) {
+                            showError(this, 'Le nom contient des caractères non autorisés');
                         } else {
                             hideError(this);
                         }
                     });
                     
-                    dateInput.addEventListener('change', function() {
-                        const isNewDate = this.value !== originalDate;
-                        if (this.value === '') {
-                            showError(this, 'Veuillez sélectionner une date');
-                        } else if (isNewDate && isDateInPast(this.value)) {
-                            showError(this, 'La date ne peut pas être dans le passé');
+                    emailInput.addEventListener('input', function() {
+                        if (this.value.trim() === '') {
+                            showError(this, 'L\'email est obligatoire');
+                        } else if (!validateEmail(this.value.trim())) {
+                            showError(this, 'Format d\'email invalide');
                         } else {
                             hideError(this);
                         }
                     });
                     
-                    lieuSelect.addEventListener('change', function() {
-                        if (!validateLocation(this.value)) {
-                            showError(this, 'Veuillez sélectionner un lieu');
+                    nbPlacesInput.addEventListener('input', function() {
+                        if (this.value.trim() === '') {
+                            showError(this, 'Veuillez spécifier le nombre de places');
+                        } else if (!validateNbPlaces(this.value)) {
+                            showError(this, 'Le nombre de places doit être entre 1 et 8');
                         } else {
                             hideError(this);
                         }
                     });
                     
-                    organisateurInput.addEventListener('input', function() {
-                        if (!validateOrganizer(this.value)) {
-                            showError(this, 'Veuillez spécifier un organisateur');
-                        } else {
-                            hideError(this);
-                        }
-                    });
-                    
-                    
+                    // Validation avant soumission du formulaire
                     form.addEventListener('submit', function(event) {
                         let isValid = true;
                         
-                        
-                        if (!validateEventName(nomInput.value)) {
-                            showError(nomInput, 'Veuillez entrer un nom d\'événement');
+                        // Validation du nom
+                        if (nomInput.value.trim() === '') {
+                            showError(nomInput, 'Le nom est obligatoire');
+                            isValid = false;
+                        } else if (!validateName(nomInput.value.trim())) {
+                            showError(nomInput, 'Le nom contient des caractères non autorisés');
                             isValid = false;
                         }
                         
-                       
-                        const isNewDate = dateInput.value !== originalDate;
-                        if (!validateDate(dateInput.value, isNewDate)) {
-                            if (dateInput.value === '') {
-                                showError(dateInput, 'Veuillez sélectionner une date');
-                            } else if (isNewDate && isDateInPast(dateInput.value)) {
-                                showError(dateInput, 'La date ne peut pas être dans le passé');
-                            }
+                        // Validation de l'email
+                        if (emailInput.value.trim() === '') {
+                            showError(emailInput, 'L\'email est obligatoire');
+                            isValid = false;
+                        } else if (!validateEmail(emailInput.value.trim())) {
+                            showError(emailInput, 'Format d\'email invalide');
                             isValid = false;
                         }
                         
-                        
-                        if (!validateLocation(lieuSelect.value)) {
-                            showError(lieuSelect, 'Veuillez sélectionner un lieu');
+                        // Validation du nombre de places
+                        if (nbPlacesInput.value.trim() === '') {
+                            showError(nbPlacesInput, 'Veuillez spécifier le nombre de places');
+                            isValid = false;
+                        } else if (!validateNbPlaces(nbPlacesInput.value)) {
+                            showError(nbPlacesInput, 'Le nombre de places doit être entre 1 et 8');
                             isValid = false;
                         }
                         
-                        
-                        if (!validateOrganizer(organisateurInput.value)) {
-                            showError(organisateurInput, 'Veuillez spécifier un organisateur');
-                            isValid = false;
-                        }
-                        
-                        // Empêcher la soumission si le formulaire est invalide
+                        // Empêcher la soumission si le formulaire n'est pas valide
                         if (!isValid) {
                             event.preventDefault();
+                        } else {
+                            // Désactiver le bouton pour éviter les soumissions multiples
+                            document.getElementById('btnSubmit').disabled = true;
+                            document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement en cours...';
                         }
                     });
                 });

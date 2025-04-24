@@ -6,7 +6,7 @@ require_once '../../Controller/ReservationController.php';
 $evenementController = new EvenementController();
 $reservationController = new ReservationController();
 
-// Vérifier si l'ID de l'événement est fourni
+
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     header('Location: ListEvenements.php');
     exit();
@@ -14,19 +14,19 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 
 $id_event = $_GET['id'];
 
-// Récupérer les détails de l'événement
+
 $evenement = $evenementController->getEvenementById($id_event);
     
-    // Vérifier si l'événement existe
+    // si existe
     if (!$evenement) {
     header('Location: ListEvenements.php');
     exit();
 }
 
-// Calculer le nombre total de places réservées
+
 $placesReservees = $reservationController->getTotalPlacesReservees($id_event);
 
-// Définir le nombre maximum de places (à ajuster selon vos besoins)
+
 $placesMax = 100;
 $placesDisponibles = $placesMax - $placesReservees;
 ?>
