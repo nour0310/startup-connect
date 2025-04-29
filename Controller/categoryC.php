@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../Model/category.php';
-
+//Crud
 class CategoryController {
     private $model;
 
@@ -47,7 +47,7 @@ class CategoryController {
                                 throw new Exception("Le nom de la catégorie ne peut pas être un nombre");
                             }
                             if (preg_match('/\d/', $categoryName)) {
-                                throw new Exception("Le nom de la catégorie ne peut pas contenir de chiffres");
+                                throw new Exception("Le nom de la catégoriesne peut pas contenir de chiffres");
                             }
                             
                             if ($this->model->addCategory($categoryName)) {
