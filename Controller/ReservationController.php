@@ -244,7 +244,7 @@ class ReservationController
         }
     }
 
-    
+    //STAT
     function getStatistiquesReservationsParEvenement()
     {
         $sql = "SELECT e.id_event, e.nom_event, COUNT(r.id_reservation) as nb_reservations, 

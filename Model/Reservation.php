@@ -27,8 +27,8 @@ class Reservation {
         $this->date_reservation = $date_reservation;
         $this->nb_places = $nb_places;
     }
-
-    // Getters
+//GETTERS
+    
     public function getId() { return $this->id_reservation; }
     public function getIdEvent() { return $this->id_event; }
     public function getNomClient() { return $this->nom_client; }
@@ -36,7 +36,7 @@ class Reservation {
     public function getDateReservation() { return $this->date_reservation; }
     public function getNbPlaces() { return $this->nb_places; }
 
-    // Setters
+    //SETTERS
     public function setIdReservation($id_reservation) { $this->id_reservation = $id_reservation; }
     public function setIdEvent($id_event) { $this->id_event = $id_event; }
     public function setNomClient($nom_client) { $this->nom_client = $nom_client; }
