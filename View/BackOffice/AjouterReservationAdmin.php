@@ -10,7 +10,7 @@ if (!isset($_GET['event_id']) || empty($_GET['event_id'])) {
 
 $event_id = (int)$_GET['event_id'];
 
-// Initialiser les contrôleurs
+// Initialiser 
 $reservationController = new ReservationController();
 $evenementController = new EvenementController();
 

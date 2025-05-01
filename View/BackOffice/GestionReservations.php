@@ -2,11 +2,11 @@
 require_once '../../Controller/ReservationController.php';
 require_once '../../Controller/EvenementController.php';
 
-// Initialiser les contrôleurs
+// Initialiser
 $reservationController = new ReservationController();
 $evenementController = new EvenementController();
 
-// Action de suppression
+//  suppression
 if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $success = $reservationController->supprimerReservation($id);
