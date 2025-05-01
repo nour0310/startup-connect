@@ -44,7 +44,7 @@ class CategoryController {
                                 throw new Exception("Le nom de la catégorie ne doit pas dépasser 10 caractères");
                             }
                             if (is_numeric($categoryName)) {
-                                throw new Exception("Le nom de la catégorie ne peut pas être un nombre");
+                                throw new Exception("Lenom de la catégorie ne peut pas être un nombre");
                             }
                             if (preg_match('/\d/', $categoryName)) {
                                 throw new Exception("Le nom de la catégoriesne peut pas contenir de chiffres");
@@ -64,24 +64,7 @@ class CategoryController {
                             if (empty($_POST['id']) || empty($_POST['name'])) {
                                 throw new Exception("ID et nom sont requis");
                             }
-                            
-                            $categoryName = trim($_POST['name']);
-                            if (strlen($categoryName) > 10) {
-                                throw new Exception("Le nom de la catégorie ne doit pas dépasser 10 caractères");
-                            }
-                            if (is_numeric($categoryName)) {
-                                throw new Exception("Le nom de la catégorie ne peut pas être un nombre");
-                            }
-                            if (preg_match('/\d/', $categoryName)) {
-                                throw new Exception("Le nom de la catégorie ne peut pas contenir de chiffres");
-                            }
-                            
-                            // Vérifier si le premier caractère est une majuscule
-                            if (!ctype_upper($categoryName[0])) {
-                                throw new Exception("Le nom de la catégorie doit commencer par une majuscule");
-                            }
-                            
-                            if ($this->model->updateCategory($_POST['id'], $categoryName)) {
+                            if ($this->model->updateCategory($_POST['id'], $_POST['name'])) {
                                 $response = ['success' => true, 'message' => 'Catégorie mise à jour avec succès'];
                             }
                             break;
