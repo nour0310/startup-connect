@@ -3,17 +3,38 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 require_once __DIR__ . '/../Model/startup.php';
+require_once __DIR__ . '/MailHelper.php';
 
 class StartupController {
     private $model;
+    private $mailHelper;
 
     public function __construct() {
         $this->model = new StartupModel();
+        $this->mailHelper = new MailHelper();
     }
 
     // Ajouter une startups
-    public function addStartup($name, $description, $categoryId, $image = null) {
-        $this->model->addStartup($name, $description, $categoryId, $image);
+    public function addStartup($name, $email, $description, $categoryId, $image = null) {
+        try {
+            // Validate email
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("Format d'email invalide");
+            }
+
+            $startupId = $this->model->addStartup($name, $email, $description, $categoryId, $image);
+            
+            if ($startupId) {
+                // Send confirmation email
+                $this->mailHelper->sendStartupConfirmationEmail($email, $name);
+                return $startupId;
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log("Error in addStartup: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     // Afficher toutes les startups
@@ -231,12 +252,14 @@ class StartupController {
                 if (isset($_POST['add_startup'])) {
                     error_log("Add startup request received");
                     
-                    if (empty($_POST['name']) || empty($_POST['description']) || empty($_POST['category_id'])) {
+                    if (empty($_POST['name']) || empty($_POST['email']) || 
+                        empty($_POST['description']) || empty($_POST['category_id'])) {
                         throw new Exception("Tous les champs sont requis");
                     }
 
-                    $result = $this->model->addStartup(
+                    $result = $this->addStartup(
                         trim($_POST['name']),
+                        trim($_POST['email']),
                         trim($_POST['description']),
                         $_POST['category_id'],
                         $uploadedFile
@@ -244,7 +267,8 @@ class StartupController {
 
                     if ($result) {
                         error_log("Startup added successfully");
-                        echo "success"; // Send response back to AJAX call
+                        $_SESSION['success_message'] = "Startup créée avec succès! Un email de confirmation a été envoyé.";
+                        echo "success";
                         exit();
                     } else {
                         throw new Exception("Erreur lors de l'ajout de la startup");

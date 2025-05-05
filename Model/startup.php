@@ -37,29 +37,37 @@ class StartupModel {
     }
 
     // Ajouter une startup avec vérification
-    public function addStartup($name, $description, $categoryId, $imagePath = null) {
+    public function addStartup($name, $email, $description, $categoryId, $imagePath = null) {
         try {
             error_log("Starting addStartup with parameters: " . print_r([
                 'name' => $name,
+                'email' => $email,
                 'description' => $description,
                 'category_id' => $categoryId,
                 'image_path' => $imagePath
             ], true));
 
             // Validate inputs
-            if (empty($name) || empty($description) || empty($categoryId)) {
+            if (empty($name) || empty($email) || empty($description) || empty($categoryId)) {
                 error_log("Invalid input parameters");
                 return false;
             }
 
-            $sql = "INSERT INTO startup (name, description, category_id, image_path) 
-                    VALUES (:name, :description, :category_id, :image_path)";
+            // Validate email format
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                error_log("Invalid email format");
+                return false;
+            }
+
+            $sql = "INSERT INTO startup (name, email, description, category_id, image_path) 
+                    VALUES (:name, :email, :description, :category_id, :image_path)";
             $query = $this->db->prepare($sql);
             
             error_log("Executing SQL: " . $sql);
             
             $params = [
                 'name' => $name,
+                'email' => $email,
                 'description' => $description,
                 'category_id' => $categoryId,
                 'image_path' => $imagePath
@@ -75,7 +83,7 @@ class StartupModel {
             $newId = $this->db->lastInsertId();
             error_log("New startup added with ID: " . $newId);
             
-            return true;
+            return $newId;
         } catch (Exception $e) {
             error_log("Exception in addStartup: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());

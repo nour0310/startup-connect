@@ -845,6 +845,13 @@ function getCategoryIcon($categoryId) {
                             <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
                             <small class="text-muted">Format accepté: JPG, PNG. Taille max: 5MB</small>
                         </div>
+                        <div class="form-group mb-3">
+                            <label for="email">Email de la startup *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">
+                                Veuillez fournir une adresse email valide.
+                            </div>
+                        </div>
                         <div class="text-end">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                             <button type="submit" name="add_startup" class="btn btn-primary">
@@ -1035,9 +1042,11 @@ function getCategoryIcon($categoryId) {
             let nameInput = form.querySelector(isEdit ? '#edit_name' : '#name');
             let descInput = form.querySelector(isEdit ? '#edit_description' : '#description');
             let catInput = form.querySelector(isEdit ? '#edit_category_id' : '#category_id');
+            let emailInput = form.querySelector(isEdit ? '#edit_email' : '#email');
             let name = nameInput.value.trim();
             let desc = descInput.value.trim();
             let cat = catInput.value;
+            let email = emailInput.value.trim();
 
             // Check if name is empty or a number
             if (!name || !isNaN(name)) {
@@ -1070,6 +1079,17 @@ function getCategoryIcon($categoryId) {
                     confirmButtonColor: '#06A3DA'
                 });
                 catInput.focus();
+                return false;
+            }
+            // Check if email is valid
+            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur de validation',
+                    text: 'Veuillez fournir une adresse email valide.',
+                    confirmButtonColor: '#06A3DA'
+                });
+                emailInput.focus();
                 return false;
             }
             // For add form, check if image is selected
@@ -1806,6 +1826,31 @@ function getCategoryIcon($categoryId) {
 
         // Initial load
         document.addEventListener('DOMContentLoaded', updateCategoryDropdowns);
+
+        // Add form validation for email
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const emailInput = document.getElementById('email');
+
+            form.addEventListener('submit', function(event) {
+                if (!emailInput.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                    emailInput.classList.add('is-invalid');
+                    event.preventDefault();
+                    return false;
+                }
+                emailInput.classList.remove('is-invalid');
+            });
+
+            emailInput.addEventListener('input', function() {
+                if (this.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        });
     </script>
 </body>
 </html>
