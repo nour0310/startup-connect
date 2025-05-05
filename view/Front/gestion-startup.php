@@ -457,354 +457,416 @@ function getCategoryIcon($categoryId) {
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
-    <script>
-        // Add this to your existing JavaScript
-        function refreshCategories() {
-            fetch('../../Controller/categoryC.php?action=getAll')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const categoryList = document.getElementById('categoryList');
-                        let html = `
-                            <li>
-                                <a href="#" class="category-filter active" data-category="0">
-                                    <i class="fas fa-th category-icon"></i>Toutes les catégories
-                                </a>
-                            </li>
-                        `;
-                        
-                        data.data.forEach(category => {
-                            html += `
-                                <li>
-                                    <a href="#" class="category-filter" data-category="${category.id}">
-                                        <i class="${getCategoryIconClass(category.id)} category-icon"></i>
-                                        ${category.name}
-                                    </a>
-                                </li>
-                            `;
-                        });
-                        categoryList.innerHTML = html;
-                        attachCategoryListeners();
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
 
-        function getCategoryIconClass(categoryId) {
-            const icons = {
-                1: 'fas fa-microchip',
-                2: 'fas fa-heartbeat',
-                3: 'fas fa-graduation-cap',
-                4: 'fas fa-chart-line',
-                5: 'fas fa-shopping-cart'
-            };
-            return icons[categoryId] || 'fas fa-folder';
-        }
-
-        function attachCategoryListeners() {
-            document.querySelectorAll('.category-filter').forEach(filter => {
-                filter.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const selectedCategory = this.dataset.category;
-                    
-                    // Update active state
-                    document.querySelectorAll('.category-filter').forEach(f => f.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Filter startups with animation
-                    document.querySelectorAll('.startup-card').forEach(card => {
-                        const cardCategory = card.dataset.category;
-                        if (selectedCategory === '0' || cardCategory === selectedCategory) {
-                            card.classList.remove('animate__fadeOut');
-                            card.classList.add('animate__fadeIn');
-                            card.style.display = '';
-                        } else {
-                            card.classList.remove('animate__fadeIn');
-                            card.classList.add('animate__fadeOut');
-                            setTimeout(() => {
-                                card.style.display = 'none';
-                            }, 500);
-                        }
-                    });
-
-                    // Show/hide no results message
-                    const visibleCards = document.querySelectorAll('.startup-card:not([style*="display: none"])').length;
-                    const noResults = document.getElementById('noResults');
-                    
-                    if (visibleCards === 0) {
-                        if (!noResults) {
-                            const message = document.createElement('div');
-                            message.id = 'noResults';
-                            message.className = 'col-12 text-center mt-4';
-                            message.innerHTML = '<p>Aucune startup trouvée dans cette catégorie</p>';
-                            document.getElementById('startupGallery').appendChild(message);
-                        }
-                    } else if (noResults) {
-                        noResults.remove();
-                    }
-                });
-            });
-        }
-
-        // Refresh categories periodically (every 30 seconds)
-        setInterval(refreshCategories, 30000);
-
-        // Initial setup
-        document.addEventListener('DOMContentLoaded', function() {
-            attachCategoryListeners();
-        });
-    </script>
-
-    <!-- Rating Modal -->
-    <div class="modal fade" id="ratingModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Noter la Startup</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="ratingForm">
-                        <input type="hidden" id="startup_id" name="startup_id">
-                        <div class="rating-input mb-3">
-                            <label>Votre note:</label>
-                            <div class="stars">
-                                <i class="far fa-star" data-value="1"></i>
-                                <i class="far fa-star" data-value="2"></i>
-                                <i class="far fa-star" data-value="3"></i>
-                                <i class="far fa-star" data-value="4"></i>
-                                <i class="far fa-star" data-value="5"></i>
-                            </div>
-                            <input type="hidden" name="rating" id="rating" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="comment" class="form-label">Commentaire:</label>
-                            <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" id="submitRating">Envoyer</button>
-                </div>
-            </div>
+    <!-- Chatbot Container -->
+    <div class="chatbot-container" id="chatbotContainer">
+        <div class="chat-header">
+            <h5>StartupConnect Assistant</h5>
+            <button class="minimize-btn" id="minimizeChatbot">−</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <textarea id="userInput" placeholder="Posez votre question ici..." rows="1"></textarea>
+            <button id="sendMessage">
+                <i class="fas fa-paper-plane"></i>
+            </button>
         </div>
     </div>
-
-    <!-- Details Modal -->
-    <div class="modal fade" id="startupDetailsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Détails de la Startup</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <img id="modalStartupImage" src="" alt="Startup Image" class="img-fluid rounded mb-3">
-                        </div>
-                        <div class="col-md-6">
-                            <h3 id="modalStartupName"></h3>
-                            <p class="badge bg-info mb-3" id="modalStartupCategory"></p>
-                            <div class="rating-display mb-3">
-                                <div class="stars" id="modalStartupRating"></div>
-                            </div>
-                            <p id="modalStartupDescription"></p>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <h4>Commentaires</h4>
-                        <div id="modalStartupComments" class="comments-section">
-                            <!-- Comments will be dynamically loaded here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button class="chat-toggle" id="toggleChat">
+        <i class="fas fa-comments"></i>
+    </button>
 
     <script>
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            document.querySelectorAll('.startup-card').forEach(card => {
-                const name = card.querySelector('.card-title').textContent.toLowerCase();
-                const description = card.querySelector('.card-text').textContent.toLowerCase();
-                const category = card.querySelector('.badge').textContent.toLowerCase();
-                
-                if (name.includes(searchTerm) || description.includes(searchTerm) || category.includes(searchTerm)) {
-                    card.style.display = '';
-                    card.classList.remove('animate__fadeOut');
-                    card.classList.add('animate__fadeIn');
-                } else {
-                    card.classList.remove('animate__fadeIn');
-                    card.classList.add('animate__fadeOut');
-                    setTimeout(() => card.style.display = 'none', 500);
-                }
-            });
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatContainer = document.getElementById('chatbotContainer');
+        const toggleButton = document.getElementById('toggleChat');
+        const minimizeButton = document.getElementById('minimizeChatbot');
+        const messagesContainer = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendMessage');
+
+        let isChatVisible = false;
+        let isProcessing = false;
+
+        // Welcome messages
+        const welcomeMessages = [
+            "Bonjour! Je suis l'assistant StartupConnect. Je peux vous aider avec :",
+            "• Des informations sur les startups\n• La recherche de startups par catégorie\n• Des détails sur les services disponibles\n• Le processus d'évaluation des startups\n\nQue souhaitez-vous savoir ?"
+        ];
+
+        const fallbackResponses = {
+            'startup': "Nous avons plusieurs startups intéressantes dans différentes catégories. Je peux vous donner plus d'informations sur une catégorie spécifique.",
+            'categorie': "Les catégories disponibles sont : Technologie, Santé, Éducation, Finance, et E-commerce. Quelle catégorie vous intéresse ?",
+            'technologie': "Dans la catégorie Technologie, nous avons des startups comme Figma, qui propose une plateforme de design collaboratif.",
+            'sante': "La catégorie Santé comprend des startups innovantes comme 'hygiene' qui développe des solutions de suivi santé en temps réel.",
+            'education': "En éducation, nous avons TakiAcademy qui propose des cours en ligne interactifs.",
+            'finance': "Dans la finance, Qonto est un excellent exemple avec ses services bancaires pour professionnels.",
+            'ecommerce': "Le secteur E-commerce comprend des solutions de paiement et des plateformes de vente en ligne.",
+            'evaluation': "Les startups sont évaluées sur une échelle de 0 à 5 étoiles. Par exemple, Qonto a une note de 5.0, tandis que Figma a 2.7 étoiles.",
+            'note': "Notre système de notation va de 0 à 5 étoiles. Les utilisateurs peuvent évaluer les startups en fonction de leur expérience.",
+            'default': "Je suis uniquement dédié à fournir des informations sur les startups de notre plateforme. Je peux vous aider avec les catégories de startups, les évaluations, ou des informations spécifiques sur nos startups."
+        };
+
+        // Toggle chat visibility
+        toggleButton.addEventListener('click', () => {
+            isChatVisible = !isChatVisible;
+            chatContainer.style.display = isChatVisible ? 'flex' : 'none';
+            toggleButton.style.display = isChatVisible ? 'none' : 'flex';
+            if (isChatVisible && messagesContainer.children.length === 0) {
+                welcomeMessages.forEach(msg => addBotMessage(msg));
+            }
         });
 
-        // Rating functionality
-        function rateStartup(startupId) {
-            document.getElementById('startup_id').value = startupId;
-            document.getElementById('rating').value = '';
-            document.getElementById('comment').value = '';
-            document.querySelectorAll('.rating-input .stars i').forEach(star => {
-                star.className = 'far fa-star';
-            });
-            new bootstrap.Modal(document.getElementById('ratingModal')).show();
-        }
-
-        // Star rating handling
-        document.querySelectorAll('.rating-input .stars i').forEach(star => {
-            star.addEventListener('mouseover', function() {
-                const value = this.dataset.value;
-                document.querySelectorAll('.rating-input .stars i').forEach(s => {
-                    s.className = parseInt(s.dataset.value) <= parseInt(value) ? 'fas fa-star' : 'far fa-star';
-                });
-            });
-
-            star.addEventListener('click', function() {
-                document.getElementById('rating').value = this.dataset.value;
-                document.querySelectorAll('.rating-input .stars i').forEach(s => {
-                    s.classList.remove('active');
-                    if (parseInt(s.dataset.value) <= parseInt(this.dataset.value)) {
-                        s.classList.add('active');
-                    }
-                });
-            });
+        // Minimize chat
+        minimizeButton.addEventListener('click', () => {
+            chatContainer.style.display = 'none';
+            toggleButton.style.display = 'flex';
+            isChatVisible = false;
         });
 
-        // Submit rating
-        document.getElementById('submitRating').addEventListener('click', function() {
-            const formData = new FormData();
-            formData.append('action', 'rate_startup');
-            formData.append('startup_id', document.getElementById('startup_id').value);
-            formData.append('rating', document.getElementById('rating').value);
-            formData.append('comment', document.getElementById('comment').value);
-
-            fetch('../../Controller/startupC.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Close modal and show success message
-                    bootstrap.Modal.getInstance(document.getElementById('ratingModal')).hide();
-                    location.reload(); // Reload to show updated rating
-                } else {
-                    alert('Error: ' + (data.message || 'Failed to submit rating'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to submit rating');
-            });
+        // Handle textarea height
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
         });
 
-        // Rating filter handling
-        document.getElementById('ratingFilter').addEventListener('change', function() {
-            const selectedRating = this.value;
-            document.querySelectorAll('.startup-card').forEach(card => {
-                const ratingValue = parseFloat(card.querySelector('.rating-value').textContent);
-                let show = true;
-
-                if (selectedRating === 'most') {
-                    show = ratingValue >= 4.5;
-                } else if (selectedRating) {
-                    show = ratingValue >= parseInt(selectedRating);
-                }
-
-                if (show) {
-                    card.style.display = '';
-                    card.classList.remove('animate__fadeOut');
-                    card.classList.add('animate__fadeIn');
-                } else {
-                    card.classList.remove('animate__fadeIn');
-                    card.classList.add('animate__fadeOut');
-                    setTimeout(() => card.style.display = 'none', 500);
-                }
-            });
-        });
-
-        // View more functionality
-        document.querySelectorAll('.view-startup').forEach(button => {
-            button.addEventListener('click', function(e) {
+        // Handle Enter key
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                const startupId = this.dataset.id;
-                
-                // Fetch startup details
-                fetch(`../../Controller/startupC.php?action=get_startup_details&id=${startupId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const startup = data.startup;
-                            const ratings = data.ratings;
-                            
-                            // Update modal content
-                            document.getElementById('modalStartupName').textContent = startup.name;
-                            document.getElementById('modalStartupCategory').textContent = startup.category_name;
-                            document.getElementById('modalStartupDescription').textContent = startup.description;
-                            
-                            // Handle image
-                            const defaultImage = '/startupConnect-website/uploads/defaults/default-startup.png';
-                            const imageUrl = startup.image_path || defaultImage;
-                            document.getElementById('modalStartupImage').src = imageUrl;
-                            document.getElementById('modalStartupImage').onerror = function() {
-                                this.src = defaultImage;
-                            };
-
-                            // Update rating display
-                            const ratingDisplay = document.getElementById('modalStartupRating');
-                            const averageRating = startup.average_rating ? parseFloat(startup.average_rating) : 0;
-                            let starsHtml = '';
-                            for (let i = 1; i <= 5; i++) {
-                                if (i <= averageRating) {
-                                    starsHtml += '<i class="fas fa-star text-warning"></i>';
-                                } else if (i - 0.5 <= averageRating) {
-                                    starsHtml += '<i class="fas fa-star-half-alt text-warning"></i>';
-                                } else {
-                                    starsHtml += '<i class="far fa-star text-warning"></i>';
-                                }
-                            }
-                            starsHtml += `<span class="ms-2">${averageRating.toFixed(1)}</span>`;
-                            ratingDisplay.innerHTML = starsHtml;
-
-                            // Update comments section
-                            const commentsSection = document.getElementById('modalStartupComments');
-                            if (ratings && ratings.length > 0) {
-                                const commentsHtml = ratings.map(rating => `
-                                    <div class="comment-item border-bottom py-3">
-                                        <div class="rating-display mb-2">
-                                            ${Array(5).fill(0).map((_, i) => 
-                                                i < rating.rating ? 
-                                                '<i class="fas fa-star text-warning"></i>' : 
-                                                '<i class="far fa-star text-warning"></i>'
-                                            ).join('')}
-                                        </div>
-                                        <p class="mb-1">${rating.comment || 'Pas de commentaire'}</p>
-                                        <small class="text-muted">${new Date(rating.created_at).toLocaleDateString()}</small>
-                                    </div>
-                                `).join('');
-                                commentsSection.innerHTML = commentsHtml;
-                            } else {
-                                commentsSection.innerHTML = '<p class="text-muted">Aucun commentaire pour le moment</p>';
-                            }
-
-                            // Show modal
-                            new bootstrap.Modal(document.getElementById('startupDetailsModal')).show();
-                        } else {
-                            alert('Error loading startup details');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to load startup details');
-                    });
-            });
+                sendMessage();
+            }
         });
+
+        // Send button click
+        sendButton.addEventListener('click', sendMessage);
+
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            // Convert URLs to clickable links
+            const linkedText = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+            
+            // Convert markdown-style bullet points to HTML
+            const formattedText = linkedText.replace(/\n• /g, '<br>• ');
+            
+            messageDiv.innerHTML = formattedText;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function addBotMessage(text) {
+            addMessage(text, false);
+        }
+
+        function addUserMessage(text) {
+            addMessage(text, true);
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            indicator.id = 'typingIndicator';
+            messagesContainer.appendChild(indicator);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function getFallbackResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Check if the message is unrelated to the website
+            const unrelatedKeywords = ['météo', 'temps', 'heure', 'date', 'jour', 'mois', 'année', 'politique', 'sport', 'cinéma', 'musique', 'restaurant', 'covid', 'vaccin'];
+            if (unrelatedKeywords.some(keyword => lowerMessage.includes(keyword))) {
+                return "Je suis désolé, je suis uniquement conçu pour répondre aux questions concernant les startups et services de notre plateforme StartupConnect. Pour d'autres types de questions, veuillez utiliser un moteur de recherche ou un assistant général.";
+            }
+            
+            // Website-related responses
+            for (const [key, response] of Object.entries(fallbackResponses)) {
+                if (lowerMessage.includes(key.toLowerCase())) {
+                    return response;
+                }
+            }
+
+            // Check for greetings
+            if (lowerMessage.match(/^(bonjour|salut|hello|hi|hey|bonsoir)/)) {
+                return "Bonjour! Je suis l'assistant StartupConnect. Je peux vous aider à découvrir nos startups dans différentes catégories. Quelle information recherchez-vous ?";
+            }
+
+            // Check for thanks
+            if (lowerMessage.match(/(merci|thanks|thank you|thx)/)) {
+                return "Je vous en prie! N'hésitez pas si vous avez d'autres questions sur nos startups.";
+            }
+
+            return fallbackResponses.default;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message || isProcessing) return;
+
+            isProcessing = true;
+            addUserMessage(message);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('chatbot-handler.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                removeTypingIndicator();
+
+                if (data.success && data.response) {
+                    addBotMessage(data.response);
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error details:', error);
+                removeTypingIndicator();
+                addBotMessage(getFallbackResponse(message));
+            } finally {
+                isProcessing = false;
+            }
+        }
+    });
     </script>
+
+    <style>
+    .chatbot-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        height: 500px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+        display: none;
+        flex-direction: column;
+        z-index: 1000;
+        transition: all 0.3s ease;
+    }
+
+    .chat-header {
+        background: #06A3DA;
+        color: white;
+        padding: 15px;
+        border-radius: 15px 15px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .minimize-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0 10px;
+        transition: all 0.3s ease;
+    }
+
+    .minimize-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #f8f9fa;
+    }
+
+    .message {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 15px;
+        margin: 5px 0;
+        line-height: 1.4;
+        font-size: 14px;
+    }
+
+    .message a {
+        color: #06A3DA;
+        text-decoration: none;
+    }
+
+    .message a:hover {
+        text-decoration: underline;
+    }
+
+    .user-message {
+        background: #06A3DA;
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 5px;
+    }
+
+    .bot-message {
+        background: white;
+        align-self: flex-start;
+        border-bottom-left-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .chat-input {
+        padding: 15px;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        background: white;
+        border-radius: 0 0 15px 15px;
+    }
+
+    .chat-input textarea {
+        flex: 1;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        padding: 10px 15px;
+        resize: none;
+        max-height: 100px;
+        min-height: 40px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .chat-input textarea:focus {
+        outline: none;
+        border-color: #06A3DA;
+        box-shadow: 0 0 0 2px rgba(6, 163, 218, 0.1);
+    }
+
+    .chat-input button {
+        background: #06A3DA;
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .chat-input button:hover {
+        background: #0588b7;
+        transform: scale(1.05);
+    }
+
+    .chat-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 30px;
+        background: #06A3DA;
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        z-index: 999;
+    }
+
+    .chat-toggle:hover {
+        transform: scale(1.1);
+        background: #0588b7;
+    }
+
+    .typing-indicator {
+        display: flex;
+        gap: 5px;
+        padding: 10px 15px;
+        background: white;
+        border-radius: 15px;
+        align-self: flex-start;
+        margin: 5px 0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .typing-dot {
+        width: 8px;
+        height: 8px;
+        background: #06A3DA;
+        border-radius: 50%;
+        animation: typing 1s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(2) { animation-delay: 0.3s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    /* Custom scrollbar for chat messages */
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Add smooth fade-in animation for messages */
+    .message {
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    </style>
 </body>
 </html>
