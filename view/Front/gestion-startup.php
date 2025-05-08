@@ -446,6 +446,66 @@ function getCategoryIcon($categoryId) {
                     <?php endif; ?>
                 </div>
 
+    <!-- Rating Modal -->
+    <div class="modal fade" id="ratingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Noter la startup</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="rating-input text-center mb-4">
+                        <div class="stars">
+                            <i class="far fa-star" data-rating="1"></i>
+                            <i class="far fa-star" data-rating="2"></i>
+                            <i class="far fa-star" data-rating="3"></i>
+                            <i class="far fa-star" data-rating="4"></i>
+                            <i class="far fa-star" data-rating="5"></i>
+                        </div>
+                        <span class="selected-rating mt-2 d-block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="ratingComment" class="form-label">Commentaire (optionnel)</label>
+                        <textarea class="form-control" id="ratingComment" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="submitRating">Envoyer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Startup Details Modal -->
+    <div class="modal fade" id="startupDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Détails de la Startup</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <img src="" alt="" class="img-fluid startup-detail-image mb-3">
+                        </div>
+                        <div class="col-md-6">
+                            <h3 class="startup-name"></h3>
+                            <div class="rating-display mb-3">
+                                <div class="stars"></div>
+                                <span class="rating-count"></span>
+                            </div>
+                            <p class="startup-description"></p>
+                            <p class="startup-category"><strong>Catégorie: </strong><span></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Libraries -->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -458,415 +518,278 @@ function getCategoryIcon($categoryId) {
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
 
-    <!-- Chatbot Container -->
-    <div class="chatbot-container" id="chatbotContainer">
-        <div class="chat-header">
-            <h5>StartupConnect Assistant</h5>
-            <button class="minimize-btn" id="minimizeChatbot">−</button>
-        </div>
-        <div class="chat-messages" id="chatMessages"></div>
-        <div class="chat-input">
-            <textarea id="userInput" placeholder="Posez votre question ici..." rows="1"></textarea>
-            <button id="sendMessage">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-    <button class="chat-toggle" id="toggleChat">
-        <i class="fas fa-comments"></i>
-    </button>
-
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const chatContainer = document.getElementById('chatbotContainer');
-        const toggleButton = document.getElementById('toggleChat');
-        const minimizeButton = document.getElementById('minimizeChatbot');
-        const messagesContainer = document.getElementById('chatMessages');
-        const userInput = document.getElementById('userInput');
-        const sendButton = document.getElementById('sendMessage');
+        // Rating functionality
+        let currentStartupId = null;
+        let selectedRating = 0;
 
-        let isChatVisible = false;
-        let isProcessing = false;
+        function rateStartup(startupId) {
+            currentStartupId = startupId;
+            selectedRating = 0;
+            updateStarDisplay(0);
+            $('#ratingComment').val('');
+            $('#ratingModal').modal('show');
+        }
 
-        // Welcome messages
-        const welcomeMessages = [
-            "Bonjour! Je suis l'assistant StartupConnect. Je peux vous aider avec :",
-            "• Des informations sur les startups\n• La recherche de startups par catégorie\n• Des détails sur les services disponibles\n• Le processus d'évaluation des startups\n\nQue souhaitez-vous savoir ?"
-        ];
-
-        const fallbackResponses = {
-            'startup': "Nous avons plusieurs startups intéressantes dans différentes catégories. Je peux vous donner plus d'informations sur une catégorie spécifique.",
-            'categorie': "Les catégories disponibles sont : Technologie, Santé, Éducation, Finance, et E-commerce. Quelle catégorie vous intéresse ?",
-            'technologie': "Dans la catégorie Technologie, nous avons des startups comme Figma, qui propose une plateforme de design collaboratif.",
-            'sante': "La catégorie Santé comprend des startups innovantes comme 'hygiene' qui développe des solutions de suivi santé en temps réel.",
-            'education': "En éducation, nous avons TakiAcademy qui propose des cours en ligne interactifs.",
-            'finance': "Dans la finance, Qonto est un excellent exemple avec ses services bancaires pour professionnels.",
-            'ecommerce': "Le secteur E-commerce comprend des solutions de paiement et des plateformes de vente en ligne.",
-            'evaluation': "Les startups sont évaluées sur une échelle de 0 à 5 étoiles. Par exemple, Qonto a une note de 5.0, tandis que Figma a 2.7 étoiles.",
-            'note': "Notre système de notation va de 0 à 5 étoiles. Les utilisateurs peuvent évaluer les startups en fonction de leur expérience.",
-            'default': "Je suis uniquement dédié à fournir des informations sur les startups de notre plateforme. Je peux vous aider avec les catégories de startups, les évaluations, ou des informations spécifiques sur nos startups."
-        };
-
-        // Toggle chat visibility
-        toggleButton.addEventListener('click', () => {
-            isChatVisible = !isChatVisible;
-            chatContainer.style.display = isChatVisible ? 'flex' : 'none';
-            toggleButton.style.display = isChatVisible ? 'none' : 'flex';
-            if (isChatVisible && messagesContainer.children.length === 0) {
-                welcomeMessages.forEach(msg => addBotMessage(msg));
+        // Star rating interaction
+        $('.rating-input .stars i').hover(
+            function() {
+                const rating = $(this).data('rating');
+                updateStarDisplay(rating);
+            },
+            function() {
+                updateStarDisplay(selectedRating);
             }
+        ).click(function() {
+            selectedRating = $(this).data('rating');
+            updateStarDisplay(selectedRating);
+            $('.selected-rating').text(`${selectedRating} étoiles`);
         });
 
-        // Minimize chat
-        minimizeButton.addEventListener('click', () => {
-            chatContainer.style.display = 'none';
-            toggleButton.style.display = 'flex';
-            isChatVisible = false;
-        });
+        function updateStarDisplay(rating) {
+            $('.rating-input .stars i').each(function(index) {
+                $(this).toggleClass('fas', index < rating)
+                    .toggleClass('far', index >= rating);
+            });
+        }
 
-        // Handle textarea height
-        userInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
-
-        // Handle Enter key
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+        // Submit rating
+        $('#submitRating').click(function() {
+            if (!selectedRating) {
+                alert('Veuillez sélectionner une note');
+                return;
             }
-        });
 
-        // Send button click
-        sendButton.addEventListener('click', sendMessage);
+            const formData = {
+                action: 'rate_startup',
+                startup_id: currentStartupId,
+                rating: selectedRating,
+                comment: $('#ratingComment').val()
+            };
 
-        function addMessage(text, isUser = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            
-            // Convert URLs to clickable links
-            const linkedText = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-            
-            // Convert markdown-style bullet points to HTML
-            const formattedText = linkedText.replace(/\n• /g, '<br>• ');
-            
-            messageDiv.innerHTML = formattedText;
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+            console.log('Sending data:', formData); // Debug log
 
-        function addBotMessage(text) {
-            addMessage(text, false);
-        }
-
-        function addUserMessage(text) {
-            addMessage(text, true);
-        }
-
-        function showTypingIndicator() {
-            const indicator = document.createElement('div');
-            indicator.className = 'typing-indicator';
-            indicator.innerHTML = `
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-            `;
-            indicator.id = 'typingIndicator';
-            messagesContainer.appendChild(indicator);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) {
-                indicator.remove();
-            }
-        }
-
-        function getFallbackResponse(message) {
-            const lowerMessage = message.toLowerCase();
-            
-            // Check if the message is unrelated to the website
-            const unrelatedKeywords = ['météo', 'temps', 'heure', 'date', 'jour', 'mois', 'année', 'politique', 'sport', 'cinéma', 'musique', 'restaurant', 'covid', 'vaccin'];
-            if (unrelatedKeywords.some(keyword => lowerMessage.includes(keyword))) {
-                return "Je suis désolé, je suis uniquement conçu pour répondre aux questions concernant les startups et services de notre plateforme StartupConnect. Pour d'autres types de questions, veuillez utiliser un moteur de recherche ou un assistant général.";
-            }
-            
-            // Website-related responses
-            for (const [key, response] of Object.entries(fallbackResponses)) {
-                if (lowerMessage.includes(key.toLowerCase())) {
-                    return response;
+            $.ajax({
+                url: '../../Controller/startupC.php',
+                method: 'POST',
+                data: formData,
+                success: function(response) {
+                    console.log('Raw response:', response); // Debug log
+                    
+                    let data;
+                    try {
+                        data = typeof response === 'string' ? JSON.parse(response) : response;
+                        console.log('Parsed data:', data); // Debug log
+                        
+                        if (data.success) {
+                            $('#ratingModal').modal('hide');
+                            updateStartupCard(currentStartupId, data.newRating);
+                            showAlert('success', 'Merci pour votre évaluation !');
+                            
+                            // Reset the form
+                            selectedRating = 0;
+                            $('#ratingComment').val('');
+                            updateStarDisplay(0);
+                        } else {
+                            showAlert('danger', data.message || 'Une erreur est survenue');
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        showAlert('danger', 'Une erreur est survenue lors du traitement de la réponse');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', {xhr, status, error});
+                    showAlert('danger', 'Une erreur est survenue lors de l\'envoi de votre évaluation');
                 }
-            }
+            });
+        });
 
-            // Check for greetings
-            if (lowerMessage.match(/^(bonjour|salut|hello|hi|hey|bonsoir)/)) {
-                return "Bonjour! Je suis l'assistant StartupConnect. Je peux vous aider à découvrir nos startups dans différentes catégories. Quelle information recherchez-vous ?";
-            }
-
-            // Check for thanks
-            if (lowerMessage.match(/(merci|thanks|thank you|thx)/)) {
-                return "Je vous en prie! N'hésitez pas si vous avez d'autres questions sur nos startups.";
-            }
-
-            return fallbackResponses.default;
-        }
-
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (!message || isProcessing) return;
-
-            isProcessing = true;
-            addUserMessage(message);
-            userInput.value = '';
-            userInput.style.height = 'auto';
-            showTypingIndicator();
-
-            try {
-                const response = await fetch('chatbot-handler.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: message
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        // View startup details
+        $('.view-startup').click(function(e) {
+            e.preventDefault();
+            const startupId = $(this).data('id');
+            
+            $.ajax({
+                url: '../../Controller/startupC.php',
+                method: 'GET',
+                data: {
+                    action: 'get_startup_details',
+                    id: startupId
+                },
+                success: function(response) {
+                    try {
+                        const data = typeof response === 'string' ? JSON.parse(response) : response;
+                        
+                        if (data.success) {
+                            const startup = data.startup;
+                            
+                            // Mettre à jour les détails dans le modal
+                            $('#startupDetailsModal .startup-name').text(startup.name || '');
+                            $('#startupDetailsModal .startup-description').text(startup.description || '');
+                            $('#startupDetailsModal .startup-category span').text(startup.category_name || '');
+                            
+                            // Gérer l'image avec fallback
+                            const imagePath = startup.image_path || '/startupConnect-website/uploads/defaults/default-startup.png';
+                            $('#startupDetailsModal .startup-detail-image')
+                                .attr('src', imagePath)
+                                .attr('alt', startup.name)
+                                .on('error', function() {
+                                    $(this).attr('src', '/startupConnect-website/uploads/defaults/default-startup.png');
+                                });
+                            
+                            // Mettre à jour l'affichage des étoiles
+                            const rating = parseFloat(startup.average_rating) || 0;
+                            let starsHtml = '';
+                            for (let i = 1; i <= 5; i++) {
+                                if (i <= rating) {
+                                    starsHtml += '<i class="fas fa-star text-warning"></i>';
+                                } else if (i - 0.5 <= rating) {
+                                    starsHtml += '<i class="fas fa-star-half-alt text-warning"></i>';
+                                } else {
+                                    starsHtml += '<i class="far fa-star text-warning"></i>';
+                                }
+                            }
+                            $('#startupDetailsModal .stars').html(starsHtml);
+                            $('#startupDetailsModal .rating-count').text(`(${startup.rating_count || 0} évaluations)`);
+                            
+                            // Afficher le modal
+                            $('#startupDetailsModal').modal('show');
+                        } else {
+                            showAlert('danger', data.message || 'Erreur lors du chargement des détails');
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        showAlert('danger', 'Erreur lors du traitement de la réponse');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', {xhr, status, error});
+                    showAlert('danger', 'Erreur lors du chargement des détails');
                 }
+            });
+        });
 
-                const data = await response.json();
-                removeTypingIndicator();
-
-                if (data.success && data.response) {
-                    addBotMessage(data.response);
+        function updateStartupCard(startupId, newRating) {
+            const card = $(`.startup-card[data-id="${startupId}"]`);
+            const starsContainer = card.find('.rating-display .stars');
+            let starsHtml = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                if (i <= newRating) {
+                    starsHtml += '<i class="fas fa-star text-warning"></i>';
+                } else if (i - 0.5 <= newRating) {
+                    starsHtml += '<i class="fas fa-star-half-alt text-warning"></i>';
                 } else {
-                    throw new Error('Invalid response format');
+                    starsHtml += '<i class="far fa-star text-warning"></i>';
                 }
-            } catch (error) {
-                console.error('Error details:', error);
-                removeTypingIndicator();
-                addBotMessage(getFallbackResponse(message));
-            } finally {
-                isProcessing = false;
             }
+            
+            starsContainer.html(starsHtml);
+            card.find('.rating-value').text(newRating.toFixed(1));
         }
-    });
+
+        function showAlert(type, message) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            $('.container').prepend(alertHtml);
+            
+            // Auto-hide alert after 3 seconds
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 3000);
+        }
     </script>
 
     <style>
-    .chatbot-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 350px;
-        height: 500px;
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-        display: none;
-        flex-direction: column;
-        z-index: 1000;
-        transition: all 0.3s ease;
-    }
+        /* Rating modal enhancements */
+        .rating-input .stars {
+            font-size: 2.5em;
+            cursor: pointer;
+            text-align: center;
+        }
 
-    .chat-header {
-        background: #06A3DA;
-        color: white;
-        padding: 15px;
-        border-radius: 15px 15px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+        .rating-input .stars i {
+            padding: 0.2em;
+            color: #ffc107;
+            transition: transform 0.2s ease;
+        }
 
-    .minimize-btn {
-        background: none;
-        border: none;
-        color: white;
-        font-size: 20px;
-        cursor: pointer;
-        padding: 0 10px;
-        transition: all 0.3s ease;
-    }
+        .rating-input .stars i:hover {
+            transform: scale(1.2);
+        }
 
-    .minimize-btn:hover {
-        transform: scale(1.1);
-    }
+        .selected-rating {
+            color: #666;
+            font-size: 1.1em;
+        }
 
-    .chat-messages {
-        flex: 1;
-        padding: 15px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        background: #f8f9fa;
-    }
+        /* Startup details modal enhancements */
+        .startup-detail-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
 
-    .message {
-        max-width: 85%;
-        padding: 12px 16px;
-        border-radius: 15px;
-        margin: 5px 0;
-        line-height: 1.4;
-        font-size: 14px;
-    }
+        .modal-content {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
 
-    .message a {
-        color: #06A3DA;
-        text-decoration: none;
-    }
+        .modal-header {
+            background: linear-gradient(145deg, #06A3DA, #0590c0);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
 
-    .message a:hover {
-        text-decoration: underline;
-    }
+        .modal-body {
+            padding: 25px;
+        }
 
-    .user-message {
-        background: #06A3DA;
-        color: white;
-        align-self: flex-end;
-        border-bottom-right-radius: 5px;
-    }
+        .startup-name {
+            color: #333;
+            margin-bottom: 15px;
+        }
 
-    .bot-message {
-        background: white;
-        align-self: flex-start;
-        border-bottom-left-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
+        .startup-description {
+            color: #666;
+            line-height: 1.6;
+        }
 
-    .chat-input {
-        padding: 15px;
-        border-top: 1px solid #dee2e6;
-        display: flex;
-        gap: 10px;
-        align-items: flex-end;
-        background: white;
-        border-radius: 0 0 15px 15px;
-    }
+        .rating-count {
+            color: #666;
+            margin-left: 10px;
+        }
 
-    .chat-input textarea {
-        flex: 1;
-        border: 1px solid #dee2e6;
-        border-radius: 20px;
-        padding: 10px 15px;
-        resize: none;
-        max-height: 100px;
-        min-height: 40px;
-        font-size: 14px;
-        transition: all 0.3s ease;
-    }
+        /* Alert animations */
+        .alert {
+            animation: slideInDown 0.5s ease;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1051;
+            min-width: 300px;
+            text-align: center;
+        }
 
-    .chat-input textarea:focus {
-        outline: none;
-        border-color: #06A3DA;
-        box-shadow: 0 0 0 2px rgba(6, 163, 218, 0.1);
-    }
-
-    .chat-input button {
-        background: #06A3DA;
-        color: white;
-        border: none;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .chat-input button:hover {
-        background: #0588b7;
-        transform: scale(1.05);
-    }
-
-    .chat-toggle {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        border-radius: 30px;
-        background: #06A3DA;
-        color: white;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-        transition: all 0.3s ease;
-        z-index: 999;
-    }
-
-    .chat-toggle:hover {
-        transform: scale(1.1);
-        background: #0588b7;
-    }
-
-    .typing-indicator {
-        display: flex;
-        gap: 5px;
-        padding: 10px 15px;
-        background: white;
-        border-radius: 15px;
-        align-self: flex-start;
-        margin: 5px 0;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-
-    .typing-dot {
-        width: 8px;
-        height: 8px;
-        background: #06A3DA;
-        border-radius: 50%;
-        animation: typing 1s infinite ease-in-out;
-    }
-
-    .typing-dot:nth-child(1) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(2) { animation-delay: 0.3s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes typing {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-    }
-
-    /* Custom scrollbar for chat messages */
-    .chat-messages::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .chat-messages::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-
-    .chat-messages::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 10px;
-    }
-
-    .chat-messages::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
-
-    /* Add smooth fade-in animation for messages */
-    .message {
-        animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+        @keyframes slideInDown {
+            from {
+                transform: translate(-50%, -100%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
     </style>
 </body>
 </html>
