@@ -1,0 +1,18 @@
+MODIFICATION,contrat,18,"type: revenue_share duree : 33 valeur :100000",2025-05-08 22:59:11
+SUPPRESSION,contrat,19,"",2025-05-08 22:59:32
+AJOUT,contrat,21,"type: Capital-investissement - montant: 2000",2025-05-08 23:00:11
+AJOUT,investissement,10,"type: cheque - devise: Euro",2025-05-08 23:04:16
+MODIFICATION,investissement,10,"type: cheque - devise: Euro",2025-05-08 23:04:48
+SUPPRESSION,investissement,10,"",2025-05-08 23:05:02
+AJOUT,contrat,22,"type: Capital-investissement - montant: 2000",2025-05-09 00:24:50
+AJOUT,contrat,23,"type: Capital-investissement - montant: 5000",2025-05-09 00:25:41
+AJOUT,contrat,24,"type: Capital-investissement - montant: 500",2025-05-09 00:27:40
+AJOUT,contrat,25,"type: Partage de revenus - montant: 500",2025-05-09 00:34:33
+AJOUT,contrat,26,"type: Capital-investissement - montant: 5000",2025-05-09 00:36:47
+SUPPRESSION,contrat,26,"",2025-05-09 00:37:01
+SUPPRESSION,contrat,25,"",2025-05-09 00:37:03
+SUPPRESSION,contrat,24,"",2025-05-09 00:37:04
+SUPPRESSION,contrat,23,"",2025-05-09 00:37:06
+SUPPRESSION,contrat,22,"",2025-05-09 00:37:07
+SUPPRESSION,contrat,21,"",2025-05-09 00:37:08
+AJOUT,contrat,26,"type: Prêt convertible - montant: 2000",2025-05-09 01:11:16
