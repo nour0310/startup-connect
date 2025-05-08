@@ -1,7 +1,7 @@
 <?php
 // Connexion à la base de données
 $host = 'localhost';
-$dbname = 'StartUp_Connect';
+$dbname = 'skillboost';
 $username = 'root';
 $password = '';
 try {
@@ -14,71 +14,63 @@ try {
 // Traitement des actions CRUD
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
-        try {
-            $pdo->beginTransaction();
-            
-            switch ($_POST['action']) {
-                case 'create':
-                    // Insertion d'une nouvelle réclamation
-                    $stmt = $pdo->prepare("INSERT INTO reclamations (
-                                          full_name, email, SUBJECT, TYPE, priority, description, STATUS, created_at
-                                          ) VALUES (
-                                          :full_name, :email, :subject, :type, :priority, :description, :status, NOW()
-                                          )");
-                    $stmt->execute([
-                        ':full_name' => $_POST['full_name'],
-                        ':email' => $_POST['email'],
-                        ':subject' => $_POST['subject'],
-                        ':type' => $_POST['type'],
-                        ':priority' => $_POST['priority'],
-                        ':description' => $_POST['description'],
-                        ':status' => $_POST['status']
-                    ]);
-                    break;
-                case 'update':
-                    // Mise à jour d'une réclamation existante
-                    $stmt = $pdo->prepare("UPDATE reclamations SET 
-                                          full_name = :full_name,
-                                          email = :email,
-                                          SUBJECT = :subject,
-                                          TYPE = :type,
-                                          priority = :priority,
-                                          description = :description,
-                                          STATUS = :status
-                                          WHERE id = :id");
-                    $stmt->execute([
-                        ':id' => $_POST['id'],
-                        ':full_name' => $_POST['full_name'],
-                        ':email' => $_POST['email'],
-                        ':subject' => $_POST['subject'],
-                        ':type' => $_POST['type'],
-                        ':priority' => $_POST['priority'],
-                        ':description' => $_POST['description'],
-                        ':status' => $_POST['status']
-                    ]);
-                    break;
-                case 'delete':
-                    // Suppression d'une réclamation
-                    $stmt = $pdo->prepare("DELETE FROM reclamations WHERE id = :id");
-                    $stmt->execute([':id' => $_POST['id']]);
-                    break;
-                case 'resolve':
-                    // Marquer comme résolu
-                    $stmt = $pdo->prepare("UPDATE reclamations SET STATUS = 'resolved' WHERE id = :id");
-                    $stmt->execute([':id' => $_POST['id']]);
-                    break;
-            }
-            
-            $pdo->commit();
-            
-            // Redirection pour éviter la resoumission du formulaire
-            header("Location: " . $_SERVER['PHP_SELF']);
-            exit();
-            
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            die("Erreur lors de l'opération : " . $e->getMessage());
+        switch ($_POST['action']) {
+            case 'create':
+                // Insertion d'une nouvelle réclamation
+                $stmt = $pdo->prepare("INSERT INTO reclamations (
+                                      full_name, email, SUBJECT, TYPE, priority, description, STATUS, created_at
+                                      ) VALUES (
+                                      :full_name, :email, :subject, :type, :priority, :description, :status, NOW()
+                                      )");
+                $stmt->execute([
+                    ':full_name' => $_POST['full_name'],
+                    ':email' => $_POST['email'],
+                    ':subject' => $_POST['subject'],
+                    ':type' => $_POST['type'],
+                    ':priority' => $_POST['priority'],
+                    ':description' => $_POST['description'],
+                    ':status' => $_POST['status']
+                ]);
+                break;
+
+            case 'update':
+                // Mise à jour d'une réclamation existante
+                $stmt = $pdo->prepare("UPDATE reclamations SET 
+                                      full_name = :full_name,
+                                      email = :email,
+                                      SUBJECT = :subject,
+                                      TYPE = :type,
+                                      priority = :priority,
+                                      description = :description,
+                                      STATUS = :status
+                                      WHERE id = :id");
+                $stmt->execute([
+                    ':id' => $_POST['id'],
+                    ':full_name' => $_POST['full_name'],
+                    ':email' => $_POST['email'],
+                    ':subject' => $_POST['subject'],
+                    ':type' => $_POST['type'],
+                    ':priority' => $_POST['priority'],
+                    ':description' => $_POST['description'],
+                    ':status' => $_POST['status']
+                ]);
+                break;
+
+            case 'delete':
+                // Suppression d'une réclamation
+                $stmt = $pdo->prepare("DELETE FROM reclamations WHERE id = :id");
+                $stmt->execute([':id' => $_POST['id']]);
+                break;
+
+            case 'resolve':
+                // Marquer comme résolu
+                $stmt = $pdo->prepare("UPDATE reclamations SET STATUS = 'resolved' WHERE id = :id");
+                $stmt->execute([':id' => $_POST['id']]);
+                break;
         }
+        // Redirection pour éviter la resoumission du formulaire
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
     }
 }
 
@@ -98,16 +90,19 @@ if (!empty($statusFilter)) {
     $query .= " AND STATUS = :status";
     $params[':status'] = $statusFilter;
 }
+
 // Filtre par type
 if (!empty($typeFilter)) {
     $query .= " AND TYPE = :type";
     $params[':type'] = $typeFilter;
 }
+
 // Filtre par priorité
 if (!empty($priorityFilter)) {
     $query .= " AND priority = :priority";
     $params[':priority'] = $priorityFilter;
 }
+
 // Filtre par date 
 if (!empty($dateFilter)) {
     $today = date('Y-m-d');
@@ -123,103 +118,38 @@ if (!empty($dateFilter)) {
     }
 }
 
-// Pagination
-$itemsPerPage = 10;
-$currentPage = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$offset = ($currentPage - 1) * $itemsPerPage;
+// Tri par défaut
+$query .= " ORDER BY created_at DESC";
 
-// Requête pour le nombre total d'éléments
-$countQuery = "SELECT COUNT(*) as total FROM reclamations WHERE 1=1" . 
-              (!empty($statusFilter) ? " AND STATUS = :status" : "") .
-              (!empty($typeFilter) ? " AND TYPE = :type" : "") .
-              (!empty($priorityFilter) ? " AND priority = :priority" : "") .
-              (!empty($dateFilter) ? 
-                  ($dateFilter === 'today' ? " AND DATE(created_at) = :date_today" : 
-                  ($dateFilter === 'week' ? " AND created_at >= DATE_SUB(:date_now, INTERVAL 7 DAY)" : 
-                  " AND MONTH(created_at) = MONTH(:date_now) AND YEAR(created_at) = YEAR(:date_now)")) : "");
-$countStmt = $pdo->prepare($countQuery);
-foreach ($params as $key => $value) {
-    if (strpos($countQuery, $key) !== false) {
-        $countStmt->bindValue($key, $value);
-    }
-}
-$countStmt->execute();
-$totalItems = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
-$totalPages = ceil($totalItems / $itemsPerPage);
+// Debug: Afficher la requête et les paramètres (à supprimer en production)
+// echo "Requête: $query<br>";
+// print_r($params);
 
-// Tri par défaut et ajout de la pagination
-$query .= " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
 try {
     $stmt = $pdo->prepare($query);
     // Liaison des paramètres
     foreach ($params as $key => $value) {
         $stmt->bindValue($key, $value);
     }
-    $stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $reclamations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Erreur de base de données: " . $e->getMessage());
 }
 
-// Statistiques - version optimisée
-$statsQuery = "SELECT 
-    COUNT(*) as total,
-    SUM(CASE WHEN STATUS = 'new' THEN 1 ELSE 0 END) as new,
-    SUM(CASE WHEN STATUS = 'in-progress' THEN 1 ELSE 0 END) as in_progress,
-    SUM(CASE WHEN STATUS = 'resolved' THEN 1 ELSE 0 END) as resolved,
-    SUM(CASE WHEN priority = 'high' THEN 1 ELSE 0 END) as urgent
-    FROM reclamations";
-
-// Appliquer les mêmes filtres pour les statistiques
-$statsWhere = [];
-$statsParams = [];
-
-if (!empty($statusFilter)) {
-    $statsWhere[] = "STATUS = :status";
-    $statsParams[':status'] = $statusFilter;
-}
-if (!empty($typeFilter)) {
-    $statsWhere[] = "TYPE = :type";
-    $statsParams[':type'] = $typeFilter;
-}
-if (!empty($priorityFilter)) {
-    $statsWhere[] = "priority = :priority";
-    $statsParams[':priority'] = $priorityFilter;
-}
-if (!empty($dateFilter)) {
-    $today = date('Y-m-d');
-    if ($dateFilter === 'today') {
-        $statsWhere[] = "DATE(created_at) = :date_today";
-        $statsParams[':date_today'] = $today;
-    } elseif ($dateFilter === 'week') {
-        $statsWhere[] = "created_at >= DATE_SUB(:date_now, INTERVAL 7 DAY)";
-        $statsParams[':date_now'] = $today;
-    } elseif ($dateFilter === 'month') {
-        $statsWhere[] = "MONTH(created_at) = MONTH(:date_now) AND YEAR(created_at) = YEAR(:date_now)";
-        $statsParams[':date_now'] = $today;
-    }
-}
-
-if (!empty($statsWhere)) {
-    $statsQuery .= " WHERE " . implode(" AND ", $statsWhere);
-}
-
-$statsStmt = $pdo->prepare($statsQuery);
-foreach ($statsParams as $key => $value) {
-    $statsStmt->bindValue($key, $value);
-}
-$statsStmt->execute();
-$statsResult = $statsStmt->fetch(PDO::FETCH_ASSOC);
-
+// Statistiques
 $stats = [
-    'new' => $statsResult['new'] ?? 0,
-    'in-progress' => $statsResult['in_progress'] ?? 0,
-    'resolved' => $statsResult['resolved'] ?? 0,
-    'urgent' => $statsResult['urgent'] ?? 0,
-    'total' => $statsResult['total'] ?? 0
+    'new' => 0,
+    'in-progress' => 0,
+    'resolved' => 0,
+    'urgent' => 0
 ];
+foreach ($reclamations as $rec) {
+    if ($rec['STATUS'] === 'new') $stats['new']++;
+    if ($rec['STATUS'] === 'in-progress') $stats['in-progress']++;
+    if ($rec['STATUS'] === 'resolved') $stats['resolved']++;
+    if ($rec['priority'] === 'high') $stats['urgent']++;
+}
 
 // Fonctions utilitaires
 function getStatusClass($status) {
@@ -264,18 +194,12 @@ function getPriorityText($priority) {
 function formatDate($dateString) {
     return date('d/m/Y', strtotime($dateString));
 }
-
-// Chemin pour l'export Excel
-$exportDir = 'exports/';
-if (!file_exists($exportDir)) {
-    mkdir($exportDir, 0777, true);
-}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>StartUp Connect - Admin Réclamations</title>
+    <title>SkillBoost - Admin Réclamations</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="Free HTML Templates" name="keywords">
     <meta content="Free HTML Templates" name="description">
@@ -297,63 +221,6 @@ if (!file_exists($exportDir)) {
     <link href="css/style.css" rel="stylesheet">
     <style>
         /* Styles personnalisés */
-        body {
-            display: flex;
-            min-height: 100vh;
-        }
-        .sidebar {
-            width: 280px;
-            min-height: 100vh;
-            background: #343a40;
-            color: white;
-            transition: all 0.3s;
-            position: fixed;
-            z-index: 1000;
-        }
-        .sidebar-header {
-            padding: 20px;
-            background: #212529;
-            text-align: center;
-        }
-        .sidebar-header img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 10px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-        }
-        .sidebar-header h4 {
-            color: #fff;
-            margin-bottom: 0;
-        }
-        .sidebar-header p {
-            color: #adb5bd;
-            font-size: 0.8rem;
-            margin-bottom: 0;
-        }
-        .sidebar-menu {
-            padding: 20px 0;
-        }
-        .sidebar-menu a {
-            display: block;
-            padding: 12px 20px;
-            color: #adb5bd;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-        .sidebar-menu a:hover, .sidebar-menu a.active {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .sidebar-menu a i {
-            margin-right: 10px;
-        }
-        .main-content {
-            margin-left: 280px;
-            width: calc(100% - 280px);
-            padding: 20px;
-        }
         .dashboard-container {
             padding: 2rem 0;
             min-height: calc(100vh - 300px);
@@ -407,41 +274,7 @@ if (!file_exists($exportDir)) {
             margin-top: 0.5rem;
             font-size: 0.85rem;
         }
-        .pagination {
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .chart-container {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .chart-title {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: #343a40;
-            font-weight: 600;
-        }
-        @media (max-width: 768px) {
-            .sidebar {
-                margin-left: -280px;
-            }
-            .sidebar.active {
-                margin-left: 0;
-            }
-            .main-content {
-                width: 100%;
-                margin-left: 0;
-            }
-            .main-content.active {
-                margin-left: 280px;
-            }
-        }
     </style>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Spinner Start -->
@@ -449,46 +282,56 @@ if (!file_exists($exportDir)) {
         <div class="spinner"></div>
     </div>
     <!-- Spinner End -->
-    <!-- Sidebar Start -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <img src="img/admin-avatar.jpg" alt="Admin Photo">
-            <h4>Fourti Nour </h4>
-            <p>Administrateur</p>
-        </div>
-        <div class="sidebar-menu">
-            <a href="admin-dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
-            <a href="admin-users.html"><i class="fas fa-users"></i> Utilisateurs</a>
-            <a href="admin-projects.html"><i class="fas fa-project-diagram"></i> StartUps</a>
-            <a href="admin-formations.html"><i class="fas fa-graduation-cap"></i> Documents</a>
-            <a href="admin-events.html"><i class="fas fa-calendar-alt"></i> Événements</a>
-            <a href="admin-investments.html"><i class="fas fa-chart-line"></i> Investissements</a>
-            <a href="admin-reclamations.php" class="active"><i class="fas fa-exclamation-circle"></i> Réclamations</a>
-            <a href="admin-settings.html"><i class="fas fa-cog"></i> Paramètres</a>
-            <a href="logout.html"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
-        </div>
-    </div>
-    <!-- Sidebar End -->
-    <!-- Main Content Start -->
-    <div class="main-content">
-        <!-- Topbar Start -->
-        <div class="container-fluid bg-dark px-5 d-none d-lg-block">
-            <div class="row gx-0">
-                <div class="col-lg-8 text-center text-lg-start mb-2 mb-lg-0">
-                    <div class="d-inline-flex align-items-center" style="height: 45px;">
-                        <small class="me-3 text-light"><i class="fa fa-map-marker-alt me-2"></i>Bloc E, Esprit , Cite La Gazelle</small>
-                        <small class="me-3 text-light"><i class="fa fa-phone-alt me-2"></i>+216 29 999 999</small>
-                        <small class="text-light"><i class="fa fa-envelope-open me-2"></i>StartUp Connect@gmail.com</small>
-                    </div>
+    <!-- Topbar Start -->
+    <div class="container-fluid bg-dark px-5 d-none d-lg-block">
+        <div class="row gx-0">
+            <div class="col-lg-8 text-center text-lg-start mb-2 mb-lg-0">
+                <div class="d-inline-flex align-items-center" style="height: 45px;">
+                    <small class="me-3 text-light"><i class="fa fa-map-marker-alt me-2"></i>Bloc E, Esprit , Cite La Gazelle</small>
+                    <small class="me-3 text-light"><i class="fa fa-phone-alt me-2"></i>+216 90 044 054</small>
+                    <small class="text-light"><i class="fa fa-envelope-open me-2"></i>SkillBoost@gmail.com</small>
                 </div>
-                <div class="col-lg-4 text-center text-lg-end">
-                    <div class="d-inline-flex align-items-center" style="height: 45px;">
-                        <small class="text-light"><i class="fa fa-user-shield me-2"></i>Espace Administrateur</small>
-                    </div>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+                <div class="d-inline-flex align-items-center" style="height: 45px;">
+                    <small class="text-light"><i class="fa fa-user-shield me-2"></i>Espace Administrateur</small>
                 </div>
             </div>
         </div>
-        <!-- Topbar End -->
+    </div>
+    <!-- Topbar End -->
+    <!-- Navbar & Carousel Start -->
+    <div class="container-fluid position-relative p-0">
+        <nav class="navbar navbar-expand-lg navbar-dark px-5 py-3 py-lg-0">
+            <a href="index.html" class="navbar-brand p-0">
+                <h1 class="m-0"><i class="fa fa-user-tie me-2"></i>SkillBoost</h1>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                <span class="fa fa-bars"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <div class="navbar-nav ms-auto py-0">
+                    <a href="admin-dashboard.html" class="nav-item nav-link">Tableau de bord</a>
+                    <a href="admin-users.html" class="nav-item nav-link">Utilisateurs</a>
+                    <a href="admin-projects.html" class="nav-item nav-link">Projets</a>
+                    <a href="admin-formations.html" class="nav-item nav-link">Formations</a>
+                    <a href="admin-events.html" class="nav-item nav-link">Événements</a>
+                    <a href="admin-investments.html" class="nav-item nav-link">Investissements</a>
+                    <a href="admin-reclamations.php" class="nav-item nav-link active">Réclamations</a>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fa fa-user-circle me-2"></i> Admin
+                        </a>
+                        <div class="dropdown-menu m-0">
+                            <a href="admin-profile.html" class="dropdown-item">Profil</a>
+                            <a href="admin-settings.html" class="dropdown-item">Paramètres</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="logout.html" class="dropdown-item">Déconnexion</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
         <!-- Dashboard Content -->
         <div class="dashboard-container">
             <div class="container">
@@ -497,21 +340,14 @@ if (!file_exists($exportDir)) {
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h2 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Gestion des Réclamations</h2>
                             <div>
-                                <button id="exportExcelBtn" class="btn btn-outline-success me-2">
-                                    <i class="fas fa-file-excel me-1"></i> Excel
-                                </button>
-                                <button id="exportPdfBtn" class="btn btn-outline-danger me-2">
-                                    <i class="fas fa-file-pdf me-1"></i> PDF
-                                </button>
-                                <button id="exportCsvBtn" class="btn btn-outline-secondary">
-                                    <i class="fas fa-file-csv me-1"></i> CSV
+                                <button id="exportBtn" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-file-export me-1"></i> Exporter
                                 </button>
                             </div>
                         </div>
                         <!-- Filtres Admin -->
                         <div class="filter-section mb-4">
                             <form method="get" action="">
-                                <input type="hidden" name="page" value="1">
                                 <div class="row g-3">
                                     <div class="col-md-3">
                                         <label class="form-label">Statut</label>
@@ -607,21 +443,6 @@ if (!file_exists($exportDir)) {
                                 </div>
                             </div>
                         </div>
-                        <!-- Graphique des statistiques -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="chart-container">
-                                    <div class="chart-title">Répartition par Statut</div>
-                                    <canvas id="statusChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="chart-container">
-                                    <div class="chart-title">Répartition par Priorité</div>
-                                    <canvas id="priorityChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
                         <!-- Tableau des Réclamations -->
                         <div class="card shadow-sm">
                             <div class="card-body">
@@ -686,38 +507,14 @@ if (!file_exists($exportDir)) {
                                                         </button>
                                                     </form>
                                                     <a href="reponsesreclamations.php?reclamation_id=<?= $rec['id'] ?>" class="btn btn-sm btn-warning">
-                                                        <i class="fas fa-reply"></i> Répondre
-                                                    </a>
+    <i class="fas fa-reply"></i> Répondre
+</a>
                                                 </td>
                                             </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
                                 </div>
-                                <!-- Pagination -->
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination">
-                                        <?php if ($currentPage > 1): ?>
-                                            <li class="page-item">
-                                                <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage - 1])) ?>" aria-label="Previous">
-                                                    <span aria-hidden="true">&laquo;</span>
-                                                </a>
-                                            </li>
-                                        <?php endif; ?>
-                                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                            <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
-                                                <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
-                                            </li>
-                                        <?php endfor; ?>
-                                        <?php if ($currentPage < $totalPages): ?>
-                                            <li class="page-item">
-                                                <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage + 1])) ?>" aria-label="Next">
-                                                    <span aria-hidden="true">&raquo;</span>
-                                                </a>
-                                            </li>
-                                        <?php endif; ?>
-                                    </ul>
-                                </nav>
                             </div>
                         </div>
                     </div>
@@ -817,8 +614,52 @@ if (!file_exists($exportDir)) {
             </div>
         </div>
     </div>
-    <!-- Main Content End -->
-     
+    <!-- Footer Start -->
+    <div class="container-fluid bg-dark text-light mt-5 wow fadeInUp" data-wow-delay="0.1s">
+        <div class="container">
+            <div class="row gx-5">
+                <div class="col-lg-8 col-md-6">
+                    <div class="row gx-5">
+                        <div class="col-lg-4 col-md-12 pt-5 mb-5">
+                            <div class="section-title section-title-sm position-relative pb-3 mb-4">
+                                <h3 class="text-light mb-0">Contact</h3>
+                            </div>
+                            <div class="d-flex mb-2">
+                                <i class="bi bi-geo-alt text-primary me-2"></i>
+                                <p class="mb-0">123 Rue Tunis,Tunisie, TN</p>
+                            </div>
+                            <div class="d-flex mb-2">
+                                <i class="bi bi-envelope-open text-primary me-2"></i>
+                                <p class="mb-0">SkillBoost@gmail.com</p>
+                            </div>
+                            <div class="d-flex mb-2">
+                                <i class="bi bi-telephone text-primary me-2"></i>
+                                <p class="mb-0">+216 90 044 054</p>
+                            </div>
+                            <div class="d-flex mt-4">
+                                <a class="btn btn-primary btn-square me-2" href="#"><i class="fab fa-twitter fw-normal"></i></a>
+                                <a class="btn btn-primary btn-square me-2" href="#"><i class="fab fa-facebook-f fw-normal"></i></a>
+                                <a class="btn btn-primary btn-square me-2" href="#"><i class="fab fa-linkedin-in fw-normal"></i></a>
+                                <a class="btn btn-primary btn-square" href="#"><i class="fab fa-instagram fw-normal"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid text-white" style="background: #061429;">
+        <div class="container text-center">
+            <div class="row justify-content-end">
+                <div class="col-lg-8 col-md-6">
+                    <div class="d-flex align-items-center justify-content-center" style="height: 75px;">
+                        <p class="mb-0">&copy; <a class="text-white border-bottom" href="#">SkillBoost</a>. All Rights Reserved.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer End -->
     <!-- Back to Top -->
     <a href="#" class="btn btn-lg btn-primary btn-lg-square rounded back-to-top"><i class="bi bi-arrow-up"></i></a>
     <!-- JavaScript Libraries -->
@@ -836,7 +677,6 @@ if (!file_exists($exportDir)) {
         document.addEventListener('DOMContentLoaded', function() {
             // Cacher le spinner
             document.getElementById('spinner').classList.remove('show');
-            
             // Gestion des boutons view/edit
             const crudModal = document.getElementById('crudModal');
             if (crudModal) {
@@ -844,7 +684,6 @@ if (!file_exists($exportDir)) {
                     const button = event.relatedTarget;
                     const isView = button.classList.contains('view-btn');
                     const isEdit = button.classList.contains('edit-btn');
-                    
                     // Configurer le formulaire selon le bouton cliqué
                     if (isView || isEdit) {
                         document.getElementById('modalTitle').textContent = isView ? 'Détails de la Réclamation' : 'Modifier la Réclamation';
@@ -859,13 +698,11 @@ if (!file_exists($exportDir)) {
                         document.getElementById('editPriority').value = button.dataset.priority;
                         document.getElementById('editStatus').value = button.dataset.status;
                         document.getElementById('editDescription').value = button.dataset.description;
-                        
                         // Afficher/masquer les éléments selon le mode
                         document.getElementById('deleteBtn').style.display = isView ? 'none' : 'inline-block';
                         document.getElementById('resolveBtn').style.display = isView && button.dataset.status !== 'resolved' ? 'inline-block' : 'none';
                         document.getElementById('modalResponseLink').style.display = isView ? 'inline-block' : 'none';
-                        document.getElementById('modalResponseLink').href = 'reponsesreclamations.php?reclamation_id=' + button.dataset.id;
-                        
+                        document.getElementById('modalResponseLink').href = 'reponsesreclamations.html?reclamation_id=' + button.dataset.id;
                         // Activer/désactiver les champs
                         const inputs = crudModal.querySelectorAll('input, select, textarea');
                         inputs.forEach(input => {
@@ -881,7 +718,6 @@ if (!file_exists($exportDir)) {
                         document.getElementById('deleteBtn').style.display = 'none';
                         document.getElementById('resolveBtn').style.display = 'none';
                         document.getElementById('modalResponseLink').style.display = 'none';
-                        
                         // Réactiver tous les champs
                         const inputs = crudModal.querySelectorAll('input, select, textarea');
                         inputs.forEach(input => {
@@ -890,34 +726,31 @@ if (!file_exists($exportDir)) {
                     }
                 });
             }
-            
             // Bouton Résoudre
             document.getElementById('resolveBtn').addEventListener('click', function() {
                 if (confirm('Marquer cette réclamation comme résolue ?')) {
                     const form = document.createElement('form');
                     form.method = 'post';
                     form.action = '';
-                    
                     const actionInput = document.createElement('input');
                     actionInput.type = 'hidden';
                     actionInput.name = 'action';
                     actionInput.value = 'resolve';
                     form.appendChild(actionInput);
-                    
                     const idInput = document.createElement('input');
                     idInput.type = 'hidden';
                     idInput.name = 'id';
                     idInput.value = document.getElementById('editId').value;
                     form.appendChild(idInput);
-                    
                     document.body.appendChild(form);
                     form.submit();
                 }
             });
-            
-            // Bouton Exporter CSV
-            document.getElementById('exportCsvBtn').addEventListener('click', function() {
+          
+            // Bouton Exporter
+            document.getElementById('exportBtn').addEventListener('click', function() {
                 let csvContent = "ID,Nom,Email,Sujet,Type,Priorité,Statut,Date\n";
+                
                 <?php foreach ($reclamations as $rec): ?>
                 csvContent += `"<?= $rec['id'] ?>","<?= htmlspecialchars($rec['full_name']) ?>","<?= htmlspecialchars($rec['email']) ?>","<?= htmlspecialchars($rec['SUBJECT']) ?>",` +
                              `"<?= getTypeText($rec['TYPE']) ?>","<?= getPriorityText($rec['priority']) ?>",` +
@@ -933,118 +766,11 @@ if (!file_exists($exportDir)) {
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                alert('Export des réclamations effectué avec succès!');
-            });
-
-            // Bouton Exporter Excel
-            document.getElementById('exportExcelBtn').addEventListener('click', function() {
-                let csvContent = "ID,Nom,Email,Sujet,Type,Priorité,Statut,Date\n";
-                <?php foreach ($reclamations as $rec): ?>
-                csvContent += `"<?= $rec['id'] ?>","<?= htmlspecialchars($rec['full_name']) ?>","<?= htmlspecialchars($rec['email']) ?>","<?= htmlspecialchars($rec['SUBJECT']) ?>",` +
-                             `"<?= getTypeText($rec['TYPE']) ?>","<?= getPriorityText($rec['priority']) ?>",` +
-                             `"<?= getStatusText($rec['STATUS']) ?>","<?= formatDate($rec['created_at']) ?>"\n`;
-                <?php endforeach; ?>
                 
-                const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.setAttribute('href', url);
-                link.setAttribute('download', `reclamations_${formatDate(new Date())}.xls`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
                 alert('Export des réclamations effectué avec succès!');
             });
-
-            // Bouton Exporter PDF
-            document.getElementById('exportPdfBtn').addEventListener('click', function() {
-                const element = document.querySelector('.dashboard-container');
-                html2pdf().from(element).save(`reclamations_${formatDate(new Date())}.pdf`);
-            });
-
-            // Initialisation des graphiques
-            const statusData = {
-                labels: ['Nouvelles', 'En cours', 'Résolues', 'Urgentes'],
-                datasets: [{
-                    label: 'Nombre de réclamations',
-                    data: [<?= $stats['new'] ?>, <?= $stats['in-progress'] ?>, <?= $stats['resolved'] ?>, <?= $stats['urgent'] ?>],
-                    backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#dc3545'],
-                    borderColor: ['#ffc107', '#17a2b8', '#28a745', '#dc3545'],
-                    borderWidth: 1
-                }]
-            };
-            
-            const statusConfig = {
-                type: 'pie',
-                data: statusData,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Répartition par Statut'
-                        }
-                    }
-                }
-            };
-            
-            const statusChart = new Chart(
-                document.getElementById('statusChart'),
-                statusConfig
-            );
-
-            const priorityData = {
-                labels: ['Haute', 'Moyenne', 'Basse'],
-                datasets: [{
-                    label: 'Nombre de réclamations',
-                    data: [<?php 
-                        $highCount = 0;
-                        $mediumCount = 0;
-                        $lowCount = 0;
-                        foreach ($reclamations as $rec) {
-                            if ($rec['priority'] === 'high') {
-                                $highCount++;
-                            } elseif ($rec['priority'] === 'medium') {
-                                $mediumCount++;
-                            } elseif ($rec['priority'] === 'low') {
-                                $lowCount++;
-                            }
-                        }
-                        echo "$highCount, $mediumCount, $lowCount";
-                    ?>],
-                    backgroundColor: ['#dc3545', '#fd7e14', '#28a745'],
-                    borderColor: ['#dc3545', '#fd7e14', '#28a745'],
-                    borderWidth: 1
-                }]
-            };
-            
-            const priorityConfig = {
-                type: 'bar',
-                data: priorityData,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Répartition par Priorité'
-                        }
-                    }
-                }
-            };
-            
-            const priorityChart = new Chart(
-                document.getElementById('priorityChart'),
-                priorityConfig
-            );
         });
-
+        
         function formatDate(dateString) {
             const date = new Date(dateString);
             const day = date.getDate().toString().padStart(2, '0');
@@ -1053,7 +779,5 @@ if (!file_exists($exportDir)) {
             return `${day}/${month}/${year}`;
         }
     </script>
-    <!-- HTML2PDF Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLdZE7pnoj14Zc2D1baTq9lVY+iJgxQ5xy5DkW0yei8pw5uRTSUT1naodr+8x372m95A2SOV0VKUpqVZGJgCiqBX0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>
